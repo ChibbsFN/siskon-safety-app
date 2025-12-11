@@ -178,6 +178,25 @@
                     </div>
                 </div>
 
+                <!-- NEW: KP focus and extra notes -->
+                <div class="info-text" style="text-align:left; margin-top:20px;">
+                    <label for="kpFocus"><strong>KP focus (free text)</strong></label><br>
+                    <input
+                        id="kpFocus"
+                        type="text"
+                        placeholder="Example: KP 88 slips and trips, or focus on KP 820 near misses"
+                        style="width:100%; margin-top:6px; padding:8px; border-radius:6px; border:1px solid #ccc;"
+                    >
+                    <br><br>
+                    <label for="extraNotes"><strong>Anything else the report should emphasize?</strong></label><br>
+                    <textarea
+                        id="extraNotes"
+                        rows="3"
+                        placeholder="Example: highlight positive safety behaviour and concrete corrective actions; group by customer site."
+                        style="width:100%; margin-top:6px; padding:8px; border-radius:6px; border:1px solid #ccc;"
+                    ></textarea>
+                </div>
+
                 <div class="status" id="uploadStatus"></div>
                 <div class="progress-bar" id="progressBar">
                     <div class="progress-fill" id="progressFill"></div>
@@ -264,7 +283,10 @@
             try {
                 document.getElementById('progressFill').style.width = '50%';
 
-                // Send to backend
+                const kpFocus = document.getElementById('kpFocus').value.trim() || null;
+                const extraNotes = document.getElementById('extraNotes').value.trim() || null;
+
+                // Send to backend, now including KP focus and extra notes
                 const response = await fetch('/.netlify/functions/analyze', {
                     method: 'POST',
                     body: JSON.stringify({ 
@@ -273,6 +295,10 @@
                             siteName: observations[0]?.site || 'Unknown Site',
                             inspectorName: observations[0]?.inspector || 'Unknown',
                             inspectionDate: new Date().toLocaleDateString()
+                        },
+                        userOptions: {
+                            kpFocus,
+                            extraNotes
                         }
                     }),
                     headers: { 'Content-Type': 'application/json' }
