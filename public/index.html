@@ -1,12 +1,94 @@
-{
-  "name": "siskon-safety-app",
-  "version": "1.0.0",
-  "description": "SISKON Safety Report Generator",
-  "scripts": {
-    "dev": "netlify dev",
-    "build": "npm install"
-  },
-  "dependencies": {
-    "axios": "^1.6.0"
-  }
-}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SISKON Safety Report Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #020617;
+        --panel-alt: #020617;
+        --accent: #0ea5e9;
+        --accent-soft: rgba(56, 189, 248, 0.15);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: #1f2937;
+        --danger: #ef4444;
+        --success: #22c55e;
+        --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.85);
+        --radius-lg: 24px;
+        --radius-md: 14px;
+        --radius-pill: 999px;
+        --input-bg: #020617;
+        --input-border: #1f2937;
+        --input-border-focus: #0ea5e9;
+        --badge-bg: #020617;
+        --badge-text: #e5e7eb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top left, #0f172a, #020617 40%),
+          radial-gradient(circle at bottom right, #111827, #020617 55%),
+          linear-gradient(145deg, #020617, #020617);
+        color: var(--text);
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .app-frame {
+        width: 100%;
+        max-width: 1120px;
+        display: grid;
+        grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+        gap: 20px;
+        background: linear-gradient(145deg, #020617, #020617);
+        border-radius: 32px;
+        box-shadow: var(--shadow-soft);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        overflow: hidden;
+      }
+
+      @media (max-width: 900px) {
+        body {
+          padding: 16px;
+        }
+        .app-frame {
+          grid-template-columns: minmax(0, 1fr);
+          border-radius: 24px;
+        }
+      }
+
+      .left-pane {
+        padding: 24px 24px 20px 24px;
+        border-right: 1px solid rgba(148, 163, 184, 0.12);
+        background: radial-gradient(circle at top left, #020617, #020617 50%);
+      }
+
+      @media (max-width: 900px) {
+        .left-pane {
+          border-right: none;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+      }
+
+      .right-pane {
+        padding: 24px 24px 20px 24px;
+        background: radial-gradient(circle at top right, #020617, #020617 55%);
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom
