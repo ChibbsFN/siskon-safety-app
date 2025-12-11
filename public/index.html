@@ -1,778 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SISKON Safety Report Generator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-      :root {
-        --bg: #0f172a;
-        --panel: #020617;
-        --panel-alt: #020617;
-        --accent: #0ea5e9;
-        --accent-soft: rgba(56, 189, 248, 0.15);
-        --text: #e5e7eb;
-        --muted: #9ca3af;
-        --border: #1f2937;
-        --danger: #ef4444;
-        --success: #22c55e;
-        --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.85);
-        --radius-lg: 24px;
-        --radius-md: 14px;
-        --radius-pill: 999px;
-        --input-bg: #020617;
-        --input-border: #1f2937;
-        --input-border-focus: #0ea5e9;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-          "Segoe UI", sans-serif;
-        background: radial-gradient(circle at top left, #0f172a, #020617 40%),
-          radial-gradient(circle at bottom right, #111827, #020617 55%),
-          linear-gradient(145deg, #020617, #020617);
-        color: var(--text);
-        display: flex;
-        align-items: stretch;
-        justify-content: center;
-        padding: 24px;
-      }
-
-      .app-frame {
-        width: 100%;
-        max-width: 1120px;
-        display: grid;
-        grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-        gap: 20px;
-        background: linear-gradient(145deg, #020617, #020617);
-        border-radius: 32px;
-        box-shadow: var(--shadow-soft);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        overflow: hidden;
-      }
-
-      @media (max-width: 900px) {
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        .app-frame {
-          grid-template-columns: minmax(0, 1fr);
-          border-radius: 24px;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-      }
-
-      .left-pane {
-        padding: 24px 24px 20px 24px;
-        border-right: 1px solid rgba(148, 163, 184, 0.12);
-        background: radial-gradient(circle at top left, #020617, #020617 50%);
-      }
-
-      @media (max-width: 900px) {
-        .left-pane {
-          border-right: none;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px 20px;
+            text-align: center;
         }
-      }
-
-      .right-pane {
-        padding: 24px 24px 20px 24px;
-        background: radial-gradient(circle at top right, #020617, #020617 55%);
-      }
-
-      .app-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 22px;
-        gap: 12px;
-      }
-
-      .app-title-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .app-title {
-        font-size: 1.15rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .app-badge {
-        padding: 3px 9px;
-        border-radius: 999px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        border: 1px solid rgba(148, 163, 184, 0.4);
-        color: #e5e7eb;
-        background: radial-gradient(circle at top, #020617, #020617);
-      }
-
-      .app-subtitle {
-        font-size: 0.8rem;
-        color: var(--muted);
-      }
-
-      .section-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.16em;
-        color: var(--muted);
-        margin: 10px 0 6px;
-      }
-
-      .input-card {
-        background: radial-gradient(circle at top left, #020617, #020617 65%);
-        border-radius: var(--radius-lg);
-        border: 1px solid rgba(30, 64, 175, 0.6);
-        padding: 14px 16px 14px;
-        margin-bottom: 14px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .input-card-inner {
-        position: relative;
-        z-index: 1;
-      }
-
-      .form-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-
-      @media (max-width: 600px) {
-        .form-row {
-          grid-template-columns: minmax(0, 1fr);
+        .header h1 { font-size: 2.8em; margin-bottom: 15px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 1em;
+            margin-top: 15px;
         }
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin-bottom: 8px;
-      }
-
-      label {
-        font-size: 0.78rem;
-        color: #9ca3af;
-      }
-
-      input[type="text"],
-      input[type="date"],
-      select,
-      textarea {
-        width: 100%;
-        padding: 7px 9px;
-        border-radius: 9px;
-        border: 1px solid var(--input-border);
-        background: var(--input-bg);
-        color: var(--text);
-        font-size: 0.8rem;
-        outline: none;
-        transition: border-color 0.14s ease, box-shadow 0.14s ease,
-          background-color 0.14s ease;
-      }
-
-      input::placeholder,
-      textarea::placeholder {
-        color: #4b5563;
-      }
-
-      input:focus,
-      select:focus,
-      textarea:focus {
-        border-color: var(--input-border-focus);
-        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
-        background-color: #020617;
-      }
-
-      textarea {
-        resize: vertical;
-        min-height: 60px;
-      }
-
-      .hint {
-        font-size: 0.7rem;
-        color: var(--muted);
-      }
-
-      .checkbox-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 4px;
-      }
-
-      .checkbox-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 10px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.6);
-        font-size: 0.7rem;
-        color: #e5e7eb;
-      }
-
-      .checkbox-pill input[type="checkbox"] {
-        width: 12px;
-        height: 12px;
-        accent-color: #38bdf8;
-      }
-
-      .generate-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-top: 8px;
-      }
-
-      .generate-left {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .generate-meta {
-        font-size: 0.7rem;
-        color: #9ca3af;
-      }
-
-      .generate-meta strong {
-        color: #e5e7eb;
-      }
-
-      .generate-button {
-        padding: 8px 18px;
-        border-radius: 999px;
-        border: none;
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        cursor: pointer;
-        color: #0f172a;
-        background: radial-gradient(circle at top left, #38bdf8, #0ea5e9);
-        box-shadow: 0 12px 25px rgba(8, 47, 73, 0.7);
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .generate-button:disabled {
-        opacity: 0.6;
-        cursor: default;
-        box-shadow: none;
-      }
-
-      .generate-spinner {
-        width: 14px;
-        height: 14px;
-        border-radius: 999px;
-        border: 2px solid rgba(15, 23, 42, 0.1);
-        border-top-color: #0f172a;
-        animation: spin 0.8s linear infinite;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
+        .content { padding: 60px 40px; text-align: center; }
+        .upload-section {
+            max-width: 600px;
+            margin: 0 auto;
         }
-      }
-
-      .error-banner {
-        display: none;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 8px;
-        border-radius: 9px;
-        background: rgba(239, 68, 68, 0.11);
-        border: 1px solid rgba(248, 113, 113, 0.5);
-        color: #fecaca;
-        font-size: 0.72rem;
-        margin-bottom: 10px;
-      }
-
-      .error-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: var(--danger);
-      }
-
-      .output-card {
-        background: radial-gradient(circle at top right, #020617, #020617 60%);
-        border-radius: var(--radius-lg);
-        border: 1px solid rgba(148, 163, 184, 0.4);
-        padding: 14px 16px 12px;
-        min-height: 200px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .output-inner {
-        position: relative;
-        z-index: 1;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .output-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-
-      .output-title {
-        font-size: 0.8rem;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #9ca3af;
-      }
-
-      .output-meta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 8px;
-      }
-
-      .output-meta-pill {
-        padding: 3px 8px;
-        border-radius: 999px;
-        font-size: 0.7rem;
-        background: rgba(15, 23, 42, 0.95);
-        border: 1px solid rgba(148, 163, 184, 0.5);
-        color: #e5e7eb;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .output-meta-pill span.dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 999px;
-        background: #4ade80;
-      }
-
-      .output-body {
-        flex: 1;
-        min-height: 180px;
-        padding: 10px 10px 8px;
-        border-radius: 12px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid rgba(31, 41, 55, 0.9);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-          "Liberation Mono", "Courier New", monospace;
-        font-size: 0.78rem;
-        line-height: 1.5;
-        color: #e5e7eb;
-        white-space: pre-wrap;
-        overflow: auto;
-      }
-
-      .output-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        text-align: center;
-        color: #6b7280;
-        gap: 6px;
-      }
-
-      .output-placeholder-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-      }
-
-      .output-placeholder-text {
-        font-size: 0.78rem;
-      }
-
-      .footer-hint {
-        font-size: 0.7rem;
-        color: #6b7280;
-        margin-top: 8px;
-        text-align: right;
-      }
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 50px 30px;
+            cursor: pointer;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            margin: 30px 0;
+        }
+        .upload-box:hover { 
+            border-color: #764ba2; 
+            background: #f0f2ff;
+            transform: scale(1.02);
+        }
+        .upload-box.drag-over { 
+            border-color: #764ba2; 
+            background: #e6e8ff;
+        }
+        .upload-icon { font-size: 4em; margin-bottom: 15px; }
+        .upload-box h2 { color: #333; margin-bottom: 10px; font-size: 1.5em; }
+        .upload-box p { color: #666; font-size: 1em; margin-bottom: 15px; }
+        #fileInput { display: none; }
+        .btn {
+            display: inline-block;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 20px rgba(102,126,234,0.3); 
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+            font-weight: 500;
+            font-size: 1em;
+        }
+        .status.loading { background: #e3f2fd; color: #1976d2; display: block; }
+        .status.success { background: #e8f5e9; color: #388e3c; display: block; }
+        .status.error { background: #ffebee; color: #d32f2f; display: block; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .preview-section {
+            background: #f9f9f9;
+            padding: 40px;
+            border-radius: 12px;
+            margin-top: 40px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .preview-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .preview-report {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.8;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .download-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px;
+            font-size: 1.1em;
+        }
+        .info-text {
+            color: #666;
+            font-size: 0.95em;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2em; }
+            .content { padding: 30px 20px; }
+            .upload-box { padding: 30px 20px; }
+            .upload-icon { font-size: 3em; }
+        }
     </style>
-  </head>
-  <body>
-    <div class="app-frame">
-      <div class="left-pane">
-        <header class="app-header">
-          <div class="app-title-group">
-            <div class="app-title">
-              SISKON Safety Reports
-              <span class="app-badge">Internal tool</span>
-            </div>
-            <div class="app-subtitle">
-              Generate summaries from occupational safety observations
-            </div>
-          </div>
-        </header>
-
-        <div id="errorBanner" class="error-banner">
-          <span class="error-dot"></span>
-          <span id="errorText">Something went wrong. Please try again.</span>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ SISKON Safety Report Generator</h1>
+            <p>Professional Safety Analysis & Reporting</p>
+            <div class="badge">✨ Upload Excel • Generate Report Instantly</div>
         </div>
-
-        <div class="section-label">Data &amp; settings</div>
-        <div class="input-card">
-          <div class="input-card-inner">
-            <!-- Upload Excel/CSV -->
-            <div class="form-group">
-              <label for="file_input">Upload observations file (.xlsx or .csv)</label>
-              <input
-                type="file"
-                id="file_input"
-                accept=".xlsx,.xls,.csv"
-              />
-              <div class="hint">
-                Use the exported occupational safety observations file from your system.
-              </div>
-            </div>
-
-            <!-- KP text focus -->
-            <div class="form-group">
-              <label for="kpi_focus">
-                What KP should this report focus on?
-              </label>
-              <input
-                type="text"
-                id="kpi_focus"
-                placeholder="Example: KP 88 slips and trips, or “focus on KP 820 near misses”"
-              />
-              <div class="hint">
-                Free text. Write one or several KPs and any theme you want
-                emphasised.
-              </div>
-            </div>
-
-            <!-- Date range -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="date_start">Start date</label>
-                <input type="date" id="date_start" />
-              </div>
-              <div class="form-group">
-                <label for="date_end">End date</label>
-                <input type="date" id="date_end" />
-              </div>
-            </div>
-
-            <!-- Other controls keep simple: just a free text notes -->
-            <div class="form-group">
-              <label for="extra_notes">
-                Anything else the report should emphasize?
-              </label>
-              <textarea
-                id="extra_notes"
-                placeholder="Example: group by customer site, highlight positive safety behaviour and concrete corrective actions."
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label>Formatting options</label>
-              <div class="checkbox-row">
-                <label class="checkbox-pill">
-                  <input type="checkbox" id="include_bullets" checked />
-                  Bullet lists for key points
-                </label>
-                <label class="checkbox-pill">
-                  <input type="checkbox" id="include_headings" checked />
-                  Clear section headings
-                </label>
-                <label class="checkbox-pill">
-                  <input type="checkbox" id="include_examples" checked />
-                  Include concrete example cases
-                </label>
-              </div>
-            </div>
-
-            <div class="generate-row">
-              <div class="generate-left">
-                <div class="generate-meta">
-                  Source: <strong>Uploaded observations file</strong>
+        
+        <div class="content">
+            <div class="upload-section">
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">📊</div>
+                    <h2>Upload Safety Data</h2>
+                    <p>Drag your Excel file here or click to browse</p>
+                    <button class="btn btn-primary">Choose Excel File</button>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                    <div class="info-text">
+                        <strong>File Format:</strong><br>
+                        Columns needed: Risk, Category, Location, Description<br>
+                        (Optional: Status, Inspector, Site)
+                    </div>
                 </div>
-                <div class="generate-meta">
-                  Output: <strong>Ready-to-send report text</strong>
+
+                <div class="status" id="uploadStatus"></div>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
                 </div>
-              </div>
-              <button id="generateBtn" class="generate-button" type="button">
-                <span
-                  id="generateSpinner"
-                  class="generate-spinner"
-                  style="display: none"
-                ></span>
-                <span id="generateLabel">Generate report</span>
-              </button>
+
+                <div class="preview-section" id="previewSection">
+                    <h2>📄 Safety Analysis Report</h2>
+                    <div class="preview-report" id="previewReport"></div>
+                    <button class="btn btn-primary download-btn" onclick="downloadPDF()">⬇️ Download PDF Report</button>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-
-      <div class="right-pane">
-        <div class="section-label">Report preview</div>
-        <div class="output-card">
-          <div class="output-inner">
-            <div class="output-header">
-              <div class="output-title">
-                Generated summary – ready to copy into email, Word or PowerPoint
-              </div>
-            </div>
-
-            <div class="output-meta-row">
-              <div class="output-meta-pill">
-                <span class="dot"></span>
-                Date range:
-                <span id="metaDateRange">Not set</span>
-              </div>
-              <div class="output-meta-pill">
-                KP focus:
-                <span id="metaKpFocus">None</span>
-              </div>
-            </div>
-
-            <div id="output" class="output-body">
-              <div class="output-placeholder">
-                <div class="output-placeholder-icon">🧾</div>
-                <div class="output-placeholder-text">
-                  Upload the file, set KP and dates, then click “Generate
-                  report”.<br />
-                  The report will appear here as structured text.
-                </div>
-              </div>
-            </div>
-
-            <div class="footer-hint">
-              Only the uploaded data and your inputs are used to prepare the
-              report.
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <script>
-      const generateBtn = document.getElementById("generateBtn");
-      const generateSpinner = document.getElementById("generateSpinner");
-      const generateLabel = document.getElementById("generateLabel");
-      const outputEl = document.getElementById("output");
-      const errorBanner = document.getElementById("errorBanner");
-      const errorText = document.getElementById("errorText");
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
 
-      const metaDateRange = document.getElementById("metaDateRange");
-      const metaKpFocus = document.getElementById("metaKpFocus");
+        // Click to upload
+        uploadBox.addEventListener('click', () => fileInput.click());
 
-      function setGenerating(isGenerating) {
-        if (isGenerating) {
-          generateBtn.disabled = true;
-          generateSpinner.style.display = "inline-block";
-          generateLabel.textContent = "Generating…";
-        } else {
-          generateBtn.disabled = false;
-          generateSpinner.style.display = "none";
-          generateLabel.textContent = "Generate report";
-        }
-      }
-
-      function showError(message) {
-        errorText.textContent = message;
-        errorBanner.style.display = "flex";
-      }
-
-      function hideError() {
-        errorBanner.style.display = "none";
-      }
-
-      function buildPrompt(fileName) {
-        const kpiFocusRaw =
-          document.getElementById("kpi_focus").value.trim();
-        const kpiFocus =
-          kpiFocusRaw || "No specific KP focus provided by the user";
-
-        const startDate = document.getElementById("date_start").value;
-        const endDate = document.getElementById("date_end").value;
-        const extraNotes = document.getElementById("extra_notes").value.trim();
-        const includeBullets =
-          document.getElementById("include_bullets").checked;
-        const includeHeadings =
-          document.getElementById("include_headings").checked;
-        const includeExamples =
-          document.getElementById("include_examples").checked;
-
-        const dateRangeText =
-          startDate && endDate
-            ? `${startDate} – ${endDate}`
-            : startDate
-            ? `From ${startDate}`
-            : endDate
-            ? `Until ${endDate}`
-            : "Not specified";
-
-        const formattingPrefs = [];
-        if (includeHeadings) {
-          formattingPrefs.push(
-            "use clear section headings (###) for main parts of the report"
-          );
-        }
-        if (includeBullets) {
-          formattingPrefs.push(
-            "use bullet lists for key points, themes and actions"
-          );
-        }
-        if (includeExamples) {
-          formattingPrefs.push(
-            "include a few concrete observation examples, anonymised"
-          );
-        }
-
-        return `
-You are preparing an internal occupational safety report for Siskon Siivous.
-
-Data source:
-- Uploaded observations file: ${fileName}
-- occupational safety observations export (CSV/Excel) with columns such as: Created, Updated, Title, Owner, Person in charge, Customer site, Cost center (KP), Employee, Name of the informant, Location, Date, Description of the situation, Share your opinion (prevention / corrective actions), Category of the observation, Measures taken, Comments from the occupational safety organisation, Rewarded (yes/no).
-
-Context and scope:
-- Date range to consider: ${dateRangeText}.
-- KP focus requested by the user: ${kpiFocus}.
-- Additional notes from the user: ${
-          extraNotes.length > 0 ? extraNotes : "None provided."
-        }
-
-Important constraints:
-- Do not invent customers, people or specific events that are not present in the data.
-- Do not copy any text directly from the source data. Always paraphrase and generalise.
-- Treat all persons as anonymised employees or customers; do not use real names.
-- Respect confidentiality and do not include any personally identifying information.
-
-Your task:
-1. Assume you have access to all observations in the uploaded file that match the date range and KP focus.
-2. From those, write a coherent safety report tailored to an internal audience (management and supervisors).
-3. Focus especially on the KP-related focus text the user gave: "${kpiFocus}".
-
-Suggested report structure:
-- Short introduction (2–3 sentences): what the report covers (KPs, date window, purpose).
-- Key themes and findings:
-  - 2–4 main bullet points summarising the most important safety themes, repeating patterns or trends.
-  - Where relevant, refer to the KPs mentioned in the user focus.
-- Concrete examples:
-  - 2–4 brief anonymised examples that illustrate different types of observations (e.g. sharp object, near miss, equipment failure, positive safety behaviour).
-  - Do not quote the original texts; describe them generally.
-- Corrective and preventive actions:
-  - 3–7 practical, actionable recommendations that supervisors and teams can implement.
-- Follow-up section:
-  - Short list of suggested follow-up items (e.g. training topics, checks, process improvements).
-
-Formatting preferences:
-- ${
-          formattingPrefs.length > 0
-            ? formattingPrefs.join("; ")
-            : "use normal paragraphs, but keep the structure clear and readable"
-        }.
-- Keep the whole report reasonably concise (roughly 0.5–1 A4 page in normal font size).
-- Use neutral, professional language.
-
-Now write only the full report text, without any additional explanation or meta-commentary.
-        `.trim();
-      }
-
-      // TODO: Replace this with your real backend endpoint.
-      // Adjust the URL and body to match your Netlify function or API.
-      async function callBackend(prompt, fileName) {
-        const res = await fetch("/.netlify/functions/generate-report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, filename: fileName }),
+        // Drag and drop
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('drag-over');
         });
-        if (!res.ok) {
-          throw new Error("Backend error: " + res.status);
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('drag-over');
+        });
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            handleFileUpload(e.dataTransfer.files[0]);
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files[0]);
+        });
+
+        function handleFileUpload(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    const ws = workbook.Sheets[workbook.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(ws);
+
+                    if (data.length === 0) {
+                        showStatus('❌ No data found in Excel file', 'error');
+                        return;
+                    }
+
+                    // Parse observations
+                    const observations = data.map(row => ({
+                        risk: row.Risk || row.risk || 'MEDIUM',
+                        category: row.Category || row.category || 'Other',
+                        location: row.Location || row.location || '',
+                        description: row.Description || row.description || '',
+                        status: row.Status || row.status || 'Open',
+                        inspector: row.Inspector || row.inspector || 'Unknown',
+                        site: row.Site || row.site || 'Unknown Site'
+                    }));
+
+                    showStatus(`✅ Loaded ${observations.length} observations from Excel`, 'success');
+                    generateReport(observations);
+
+                } catch (error) {
+                    showStatus(`❌ Error reading file: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
         }
-        const data = await res.json();
-        return data.text || "";
-      }
 
-      generateBtn.addEventListener("click", async () => {
-        hideError();
+        async function generateReport(observations) {
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressFill').style.width = '25%';
+            document.getElementById('previewReport').textContent = '⏳ Analyzing data...';
+            document.getElementById('uploadStatus').style.display = 'none';
 
-        const fileInput = document.getElementById("file_input");
-        const file = fileInput.files[0];
+            try {
+                document.getElementById('progressFill').style.width = '50%';
 
-        if (!file) {
-          showError("Please upload an observations file first.");
-          return;
+                // Send to backend
+                const response = await fetch('/.netlify/functions/analyze', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        data: observations,
+                        siteInfo: {
+                            siteName: observations[0]?.site || 'Unknown Site',
+                            inspectorName: observations[0]?.inspector || 'Unknown',
+                            inspectionDate: new Date().toLocaleDateString()
+                        }
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                document.getElementById('progressFill').style.width = '75%';
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Server error');
+                }
+
+                const result = await response.json();
+                document.getElementById('progressFill').style.width = '95%';
+                document.getElementById('previewReport').textContent = result.analysis;
+
+                setTimeout(() => {
+                    document.getElementById('progressFill').style.width = '100%';
+                    setTimeout(() => {
+                        document.getElementById('progressBar').style.display = 'none';
+                        document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }, 200);
+
+            } catch (error) {
+                document.getElementById('previewReport').textContent = `❌ Error: ${error.message}\n\nMake sure the API key is configured in Netlify environment variables.`;
+                document.getElementById('progressBar').style.display = 'none';
+            }
         }
 
-        setGenerating(true);
-        try {
-          const prompt = buildPrompt(file.name);
+        function downloadPDF() {
+            const reportText = document.getElementById('previewReport').textContent;
+            const date = new Date().toISOString().split('T')[0];
 
-          // update preview meta
-          const startDate = document.getElementById("date_start").value;
-          const endDate = document.getElementById("date_end").value;
-          const kpiFocusRaw =
-            document.getElementById("kpi_focus").value.trim();
-
-          const dateRangeText =
-            startDate && endDate
-              ? `${startDate} – ${endDate}`
-              : startDate
-              ? `From ${startDate}`
-              : endDate
-              ? `Until ${endDate}`
-              : "Not set";
-
-          metaDateRange.textContent = dateRangeText;
-          metaKpFocus.textContent =
-            kpiFocusRaw.length > 0
-              ? kpiFocusRaw
-              : "No specific KP focus provided";
-
-          const reportText = await callBackend(prompt, file.name);
-
-          outputEl.textContent = reportText;
-        } catch (e) {
-          console.error(e);
-          showError(
-            "Failed to generate report. Please check your connection and try again."
-          );
-        } finally {
-          setGenerating(false);
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SISKON Safety Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.8;
+            padding: 30px;
         }
-      });
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .report-content {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #999;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ SISKON Safety Report</h1>
+        <p>Generated on ${new Date().toLocaleString()}</p>
+    </div>
+    <div class="report-content">${reportText}</div>
+    <div class="footer">
+        <p>SISKON Safety Report Generator | ${date}</p>
+    </div>
+</body>
+</html>`;
+
+            html2pdf().set({
+                margin: 10,
+                filename: `SISKON-Safety-Report-${date}.pdf`,
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            }).from(document.createElement('div')).html(htmlContent).save();
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('uploadStatus');
+            el.innerHTML = msg;
+            el.className = `status ${type}`;
+            setTimeout(() => {
+                if (type !== 'success') {
+                    el.style.display = 'none';
+                }
+            }, 4000);
+        }
     </script>
-  </body>
+</body>
 </html>
