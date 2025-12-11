@@ -23,8 +23,6 @@
         --input-bg: #020617;
         --input-border: #1f2937;
         --input-border-focus: #0ea5e9;
-        --badge-bg: #020617;
-        --badge-text: #e5e7eb;
       }
 
       * {
@@ -177,7 +175,6 @@
 
       input[type="text"],
       input[type="date"],
-      input[type="number"],
       select,
       textarea {
         width: 100%;
@@ -210,14 +207,9 @@
         min-height: 60px;
       }
 
-      select {
-        appearance: none;
-        background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%),
-          linear-gradient(135deg, #9ca3af 50%, transparent 50%);
-        background-position: calc(100% - 13px) calc(50% - 3px),
-          calc(100% - 9px) calc(50% - 3px);
-        background-size: 6px 6px, 6px 6px;
-        background-repeat: no-repeat;
+      .hint {
+        font-size: 0.7rem;
+        color: var(--muted);
       }
 
       .checkbox-row {
@@ -243,11 +235,6 @@
         width: 12px;
         height: 12px;
         accent-color: #38bdf8;
-      }
-
-      .hint {
-        font-size: 0.7rem;
-        color: var(--muted);
       }
 
       .generate-row {
@@ -433,13 +420,6 @@
         font-size: 0.78rem;
       }
 
-      .small-kpi-hint {
-        font-size: 0.7rem;
-        color: var(--muted);
-        margin-top: -2px;
-        margin-bottom: 6px;
-      }
-
       .footer-hint {
         font-size: 0.7rem;
         color: #6b7280;
@@ -458,7 +438,7 @@
               <span class="app-badge">Internal tool</span>
             </div>
             <div class="app-subtitle">
-              Generate structured summaries from occupational safety observations
+              Generate summaries from occupational safety observations
             </div>
           </div>
         </header>
@@ -471,6 +451,7 @@
         <div class="section-label">Data &amp; settings</div>
         <div class="input-card">
           <div class="input-card-inner">
+            <!-- Upload Excel/CSV -->
             <div class="form-group">
               <label for="file_input">Upload observations file (.xlsx or .csv)</label>
               <input
@@ -483,63 +464,7 @@
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="language">Report language</label>
-                <select id="language">
-                  <option value="English">English</option>
-                  <option value="Finnish">Finnish</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="time_range">Time window</label>
-                <select id="time_range">
-                  <option value="Last 7 days">Last 7 days</option>
-                  <option value="Last 30 days" selected>Last 30 days</option>
-                  <option value="This calendar year">This calendar year</option>
-                  <option value="Custom period (describe in notes)">
-                    Custom period (describe in notes)
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="site_focus">Customer site or group to focus on</label>
-              <input
-                type="text"
-                id="site_focus"
-                placeholder="Example: “All Scandic hotels” or “Greenstar Hotel Jyväskylä (KP 88)” or “All KP 88 observations”"
-              />
-              <div class="hint">
-                You can write one site, several sites, a KP cost center, or leave
-                empty to use all observations.
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="report_purpose">What kind of report do you need?</label>
-              <select id="report_purpose">
-                <option value="Management safety summary">
-                  Management safety summary (high-level, with key themes and
-                  actions)
-                </option>
-                <option value="Team safety meeting material">
-                  Team safety meeting material (practical examples and talking
-                  points)
-                </option>
-                <option value="Customer-facing summary">
-                  Customer-facing summary (polished, focus on improvements and
-                  follow-up)
-                </option>
-                <option value="Root cause and trend analysis">
-                  Root cause and trend analysis (categories, patterns, repeated
-                  risks)
-                </option>
-              </select>
-            </div>
-
-            <!-- KP free-text focus field -->
+            <!-- KP text focus -->
             <div class="form-group">
               <label for="kpi_focus">
                 What KP should this report focus on?
@@ -547,21 +472,34 @@
               <input
                 type="text"
                 id="kpi_focus"
-                placeholder="Example: KP 88 slips and trips, or “focus especially on KP 820 near misses”"
+                placeholder="Example: KP 88 slips and trips, or “focus on KP 820 near misses”"
               />
-              <div class="small-kpi-hint">
-                You can write any free text here (a single KP, several KPs, or a
-                theme). This will be used as the main focus line for the report.
+              <div class="hint">
+                Free text. Write one or several KPs and any theme you want
+                emphasised.
               </div>
             </div>
 
+            <!-- Date range -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="date_start">Start date</label>
+                <input type="date" id="date_start" />
+              </div>
+              <div class="form-group">
+                <label for="date_end">End date</label>
+                <input type="date" id="date_end" />
+              </div>
+            </div>
+
+            <!-- Other controls keep simple: just a free text notes -->
             <div class="form-group">
               <label for="extra_notes">
                 Anything else the report should emphasize?
               </label>
               <textarea
                 id="extra_notes"
-                placeholder="Example: “Highlight positive safety behaviour examples and concrete corrective actions. Group by customer site and include practical tips for supervisors.”"
+                placeholder="Example: group by customer site, highlight positive safety behaviour and concrete corrective actions."
               ></textarea>
             </div>
 
@@ -581,10 +519,6 @@
                   Include concrete example cases
                 </label>
               </div>
-              <div class="hint">
-                The tool will summarise and paraphrase; it will not copy source
-                text directly or expose any personal data.
-              </div>
             </div>
 
             <div class="generate-row">
@@ -593,7 +527,7 @@
                   Source: <strong>Uploaded observations file</strong>
                 </div>
                 <div class="generate-meta">
-                  Output: <strong>Clean, ready-to-send report text</strong>
+                  Output: <strong>Ready-to-send report text</strong>
                 </div>
               </div>
               <button id="generateBtn" class="generate-button" type="button">
@@ -622,14 +556,12 @@
             <div class="output-meta-row">
               <div class="output-meta-pill">
                 <span class="dot"></span>
-                Language: <span id="metaLanguage">English</span>
+                Date range:
+                <span id="metaDateRange">Not set</span>
               </div>
               <div class="output-meta-pill">
-                Time window: <span id="metaTimeRange">Last 30 days</span>
-              </div>
-              <div class="output-meta-pill">
-                Site focus:
-                <span id="metaSiteFocus">All sites / KPs</span>
+                KP focus:
+                <span id="metaKpFocus">None</span>
               </div>
             </div>
 
@@ -637,16 +569,16 @@
               <div class="output-placeholder">
                 <div class="output-placeholder-icon">🧾</div>
                 <div class="output-placeholder-text">
-                  Upload a file, fill in the fields on the left and click
-                  “Generate report”.<br />
-                  The report will appear here as structured, ready-to-use text.
+                  Upload the file, set KP and dates, then click “Generate
+                  report”.<br />
+                  The report will appear here as structured text.
                 </div>
               </div>
             </div>
 
             <div class="footer-hint">
-              Only the uploaded data and your instructions are used to prepare
-              the report text.
+              Only the uploaded data and your inputs are used to prepare the
+              report.
             </div>
           </div>
         </div>
@@ -661,9 +593,8 @@
       const errorBanner = document.getElementById("errorBanner");
       const errorText = document.getElementById("errorText");
 
-      const metaLanguage = document.getElementById("metaLanguage");
-      const metaTimeRange = document.getElementById("metaTimeRange");
-      const metaSiteFocus = document.getElementById("metaSiteFocus");
+      const metaDateRange = document.getElementById("metaDateRange");
+      const metaKpFocus = document.getElementById("metaKpFocus");
 
       function setGenerating(isGenerating) {
         if (isGenerating) {
@@ -687,11 +618,13 @@
       }
 
       function buildPrompt(fileName) {
-        const selectedLanguage = document.getElementById("language").value;
-        const timeRange = document.getElementById("time_range").value;
-        const siteFocus = document.getElementById("site_focus").value.trim();
-        const reportPurpose =
-          document.getElementById("report_purpose").value;
+        const kpiFocusRaw =
+          document.getElementById("kpi_focus").value.trim();
+        const kpiFocus =
+          kpiFocusRaw || "No specific KP focus provided by the user";
+
+        const startDate = document.getElementById("date_start").value;
+        const endDate = document.getElementById("date_end").value;
         const extraNotes = document.getElementById("extra_notes").value.trim();
         const includeBullets =
           document.getElementById("include_bullets").checked;
@@ -700,13 +633,14 @@
         const includeExamples =
           document.getElementById("include_examples").checked;
 
-        const kpiFocusRaw =
-          document.getElementById("kpi_focus").value.trim();
-        const kpiFocus =
-          kpiFocusRaw || "No specific KP focus provided by the user";
-
-        const effectiveSiteFocus =
-          siteFocus.length > 0 ? siteFocus : "All available sites and KPs";
+        const dateRangeText =
+          startDate && endDate
+            ? `${startDate} – ${endDate}`
+            : startDate
+            ? `From ${startDate}`
+            : endDate
+            ? `Until ${endDate}`
+            : "Not specified";
 
         const formattingPrefs = [];
         if (includeHeadings) {
@@ -728,17 +662,13 @@
         return `
 You are preparing an internal occupational safety report for Siskon Siivous.
 
-Write the report in: ${selectedLanguage}.
-
 Data source:
 - Uploaded observations file: ${fileName}
-- Columns include (among others): Created, Updated, Title, Owner, Person in charge, Customer site, Cost center (KP), Employee, Name of the informant, Location, Date, Description of the situation, Share your opinion (how the situation could have been avoided or how to ensure it does not happen again), Category of the observation, Measures taken, Comments from the occupational safety organisation, Rewarded (yes/no).
+- occupational safety observations export (CSV/Excel) with columns such as: Created, Updated, Title, Owner, Person in charge, Customer site, Cost center (KP), Employee, Name of the informant, Location, Date, Description of the situation, Share your opinion (prevention / corrective actions), Category of the observation, Measures taken, Comments from the occupational safety organisation, Rewarded (yes/no).
 
 Context and scope:
-- Time window to consider: ${timeRange}.
-- Site / customer / KP focus requested by the user: ${effectiveSiteFocus}.
-- Report type / purpose: ${reportPurpose}.
-- User-provided report focus (KP-related or thematic): ${kpiFocus}.
+- Date range to consider: ${dateRangeText}.
+- KP focus requested by the user: ${kpiFocus}.
 - Additional notes from the user: ${
           extraNotes.length > 0 ? extraNotes : "None provided."
         }
@@ -749,32 +679,23 @@ Important constraints:
 - Treat all persons as anonymised employees or customers; do not use real names.
 - Respect confidentiality and do not include any personally identifying information.
 
-What you know about the data (schema level):
-- Many observations from different customer sites (e.g. hotels, gyms, schools, offices, residential buildings).
-- Categories can include: slips and falls, sharp objects, electrical risks, fire safety, broken equipment, poor lighting, threatening situations, positive safety behaviour, etc.
-- Observations often include both the situation and suggested corrective actions or safety reminders.
-- The “KP” field is a cost center / customer identifier, such as KP 88, KP 820, etc.
-
 Your task:
-1. Assume you have access to all observations that match the time window and site/KP focus.
-2. From those, write a coherent safety report tailored to the requested purpose.
+1. Assume you have access to all observations in the uploaded file that match the date range and KP focus.
+2. From those, write a coherent safety report tailored to an internal audience (management and supervisors).
 3. Focus especially on the KP-related focus text the user gave: "${kpiFocus}".
-   - This might name one KP (e.g. "KP 88") or describe a theme ("KP 88 slips and trips", "KP 820 near misses").
-   - Treat it as the central lens through which you select and group insights.
 
 Suggested report structure:
-- Short introduction: 2–3 sentences explaining what the report covers (sites/KPs, time window, purpose).
+- Short introduction (2–3 sentences): what the report covers (KPs, date window, purpose).
 - Key themes and findings:
   - 2–4 main bullet points summarising the most important safety themes, repeating patterns or trends.
-  - If relevant, highlight which KP(s) or customer sites are most visible in each theme.
+  - Where relevant, refer to the KPs mentioned in the user focus.
 - Concrete examples:
   - 2–4 brief anonymised examples that illustrate different types of observations (e.g. sharp object, near miss, equipment failure, positive safety behaviour).
   - Do not quote the original texts; describe them generally.
 - Corrective and preventive actions:
   - 3–7 practical, actionable recommendations that supervisors and teams can implement.
-  - Link them to the typical categories (e.g. slips and falls, electrical risks, threatening situations, etc.).
-- Section for follow-up:
-  - Short list of suggested follow-up items (e.g. training topics, checks, process improvements) that would be useful based on the observations.
+- Follow-up section:
+  - Short list of suggested follow-up items (e.g. training topics, checks, process improvements).
 
 Formatting preferences:
 - ${
@@ -789,9 +710,9 @@ Now write only the full report text, without any additional explanation or meta-
         `.trim();
       }
 
-      // Replace this with your real backend endpoint
+      // TODO: Replace this with your real backend endpoint.
+      // Adjust the URL and body to match your Netlify function or API.
       async function callBackend(prompt, fileName) {
-        // Example structure – adjust URL and body to match your existing function
         const res = await fetch("/.netlify/functions/generate-report", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -819,16 +740,26 @@ Now write only the full report text, without any additional explanation or meta-
         try {
           const prompt = buildPrompt(file.name);
 
-          const selectedLanguage =
-            document.getElementById("language").value;
-          const timeRange = document.getElementById("time_range").value;
-          const siteFocus =
-            document.getElementById("site_focus").value.trim();
+          // update preview meta
+          const startDate = document.getElementById("date_start").value;
+          const endDate = document.getElementById("date_end").value;
+          const kpiFocusRaw =
+            document.getElementById("kpi_focus").value.trim();
 
-          metaLanguage.textContent = selectedLanguage;
-          metaTimeRange.textContent = timeRange;
-          metaSiteFocus.textContent =
-            siteFocus.length > 0 ? siteFocus : "All sites / KPs";
+          const dateRangeText =
+            startDate && endDate
+              ? `${startDate} – ${endDate}`
+              : startDate
+              ? `From ${startDate}`
+              : endDate
+              ? `Until ${endDate}`
+              : "Not set";
+
+          metaDateRange.textContent = dateRangeText;
+          metaKpFocus.textContent =
+            kpiFocusRaw.length > 0
+              ? kpiFocusRaw
+              : "No specific KP focus provided";
 
           const reportText = await callBackend(prompt, file.name);
 
