@@ -1,587 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISKON Safety Report Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 50px 20px;
-            text-align: center;
-        }
-        .header h1 { font-size: 2.8em; margin-bottom: 15px; }
-        .header p { font-size: 1.2em; opacity: 0.9; }
-        .badge {
-            display: inline-block;
-            background: rgba(255,255,255,0.2);
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 1em;
-            margin-top: 15px;
-        }
-        .content { padding: 60px 40px; text-align: center; }
-        .upload-section {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .upload-box {
-            border: 3px dashed #667eea;
-            border-radius: 12px;
-            padding: 50px 30px;
-            cursor: pointer;
-            background: #f8f9ff;
-            transition: all 0.3s ease;
-            margin: 30px 0;
-        }
-        .upload-box:hover { 
-            border-color: #764ba2; 
-            background: #f0f2ff;
-            transform: scale(1.02);
-        }
-        .upload-box.drag-over { 
-            border-color: #764ba2; 
-            background: #e6e8ff;
-        }
-        .upload-box.has-data {
-            border-color: #4caf50;
-            background: #e8f5e9;
-        }
-        .upload-icon { font-size: 4em; margin-bottom: 15px; }
-        .upload-box h2 { color: #333; margin-bottom: 10px; font-size: 1.5em; }
-        .upload-box p { color: #666; font-size: 1em; margin-bottom: 15px; }
-        #fileInput { display: none; }
-        .btn {
-            display: inline-block;
-            padding: 12px 40px;
-            border: none;
-            border-radius: 6px;
-            font-size: 1.1em;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .btn-primary:hover:not(:disabled) { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px rgba(102,126,234,0.3); 
-        }
-        .btn-success {
-            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-            color: white;
-        }
-        .btn-success:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(76,175,80,0.3);
-        }
-        .input-section {
-            background: #f8f9ff;
-            padding: 30px;
-            border-radius: 12px;
-            margin: 30px 0;
-            border: 2px solid #e3f2fd;
-        }
-        .input-section h3 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.4em;
-        }
-        .form-group {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 6px;
-            font-size: 0.95em;
-        }
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: border-color 0.3s ease;
-            box-sizing: border-box;
-        }
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-        }
-        .date-range {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .date-group {
-            flex: 1;
-            min-width: 140px;
-        }
-        .btn-group {
-            margin: 30px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
-        .status {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            display: none;
-            font-weight: 500;
-            font-size: 1em;
-        }
-        .status.loading { background: #e3f2fd; color: #1976d2; display: block; }
-        .status.success { background: #e8f5e9; color: #388e3c; display: block; }
-        .status.error { background: #ffebee; color: #d32f2f; display: block; }
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            display: none;
-            margin: 20px 0;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        .preview-section {
-            background: #f9f9f9;
-            padding: 40px;
-            border-radius: 12px;
-            margin-top: 40px;
-            border: 1px solid #ddd;
-            display: none;
-        }
-        .preview-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-        .preview-report {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 0.95em;
-            line-height: 1.8;
-            max-height: 600px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        .download-btn {
-            width: 100%;
-            margin-top: 20px;
-            padding: 14px;
-            font-size: 1.1em;
-        }
-        @media (max-width: 768px) {
-            .header h1 { font-size: 2em; }
-            .content { padding: 30px 20px; }
-            .upload-box { padding: 30px 20px; }
-            .upload-icon { font-size: 3em; }
-            .date-range { flex-direction: column; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Occupational Safety Analysis</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background:#f4f4f4; }
+    .page {
+      max-width: 900px; margin: 0 auto; background:white;
+      padding: 32px 40px; border-radius: 10px; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    }
+    h1,h2,h3,h4 { margin: 0 0 8px 0; color:#222; }
+    h1 { font-size: 26px; text-align:center; text-transform:uppercase; letter-spacing:1px; }
+    h2 { font-size: 20px; margin-top:24px; border-bottom:1px solid #ddd; padding-bottom:4px; }
+    h3 { font-size: 16px; margin-top:18px; }
+    .meta { text-align:center; margin-bottom:20px; color:#555; }
+    .summary-grid {
+      display:grid; grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:12px; margin:16px 0;
+    }
+    .card {
+      border:1px solid #ddd; border-radius:6px; padding:10px 12px; font-size:13px;
+    }
+    .card-title { font-weight:bold; font-size:12px; color:#555; text-transform:uppercase; }
+    .card-value { font-size:16px; margin-top:4px; }
+    table {
+      width:100%; border-collapse:collapse; font-size:11px; margin-top:8px;
+    }
+    th, td {
+      border:1px solid #ddd; padding:4px 6px; vertical-align:top;
+    }
+    th {
+      background:#fafafa; text-align:left; font-weight:bold;
+    }
+    ul { margin:6px 0 10px 18px; padding:0; font-size:12px; }
+    .kp-header {
+      margin-top:24px; padding:10px 12px; background:#f6f7ff;
+      border-left:4px solid #667eea;
+    }
+    .highlight { font-weight:bold; color:#c62828; }
+    .tagline { font-size:12px; color:#777; margin-top:4px; }
+    .download-btn {
+      margin-top:16px; padding:8px 18px; border:none; border-radius:4px;
+      background:#667eea; color:white; cursor:pointer; font-weight:600;
+    }
+    .controls { margin-bottom:18px; display:flex; gap:8px; flex-wrap:wrap; }
+    .controls input, .controls textarea {
+      padding:6px 8px; font-size:12px; border-radius:4px; border:1px solid #ccc;
+    }
+    .controls textarea { min-width:260px; min-height:40px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🛡️ SISKON Safety Report Generator</h1>
-            <p>Professional Safety Analysis & Reporting</p>
-            <div class="badge">✨ Upload • Configure • Generate • Download</div>
-        </div>
-        
-        <div class="content">
-            <div class="upload-section">
-                <div class="upload-box" id="uploadBox">
-                    <div class="upload-icon">📊</div>
-                    <h2>Upload Safety Data</h2>
-                    <p>Drag your Excel file here or click to browse</p>
-                    <button class="btn btn-primary">Choose Excel File</button>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
-                    <div class="info-text" style="margin-top: 15px; font-size: 0.9em; color: #666;">
-                        Columns needed: Risk, Category, Location, Description (Optional: Status, Inspector, Site)
-                    </div>
-                </div>
+  <div class="page">
+    <h1>Occupational Safety Analysis</h1>
+    <div class="meta" id="reportMeta">
+      <!-- e.g. “KPs: 810, 815, 82, 820, 825, 86 – Year 2025” injected here -->
+    </div>
 
-                <!-- Input Configuration Section -->
-                <div class="input-section" id="inputSection" style="display: none;">
-                    <h3>⚙️ Configure Your Report</h3>
-                    
-                    <div class="form-group">
-                        <label for="kpFocus">KP Focus (e.g., "KP 88 slips and trips")</label>
-                        <input type="text" id="kpFocus" placeholder="Enter KP numbers or focus areas...">
-                    </div>
+    <div class="controls">
+      <input id="kpFocus" type="text" placeholder="KP focus (e.g. 82, 820, sharp objects)" />
+      <input id="periodStart" type="date" />
+      <input id="periodEnd" type="date" />
+      <textarea id="emphasis" placeholder="What should this report emphasize?"></textarea>
+      <button id="generateBtn">Generate</button>
+      <button id="pdfBtn">Make PDF</button>
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+    </div>
 
-                    <div class="form-group">
-                        <label for="extraNotes">Report Emphasis</label>
-                        <textarea id="extraNotes" rows="3" placeholder="Highlight positive behaviors, corrective actions, group by site, etc..."></textarea>
-                    </div>
+    <div id="summarySection">
+      <h2>Summary</h2>
+      <div class="summary-grid" id="summaryCards"></div>
+      <p id="summaryNarrative"></p>
+    </div>
 
-                    <div class="form-group">
-                        <label>Date Range (optional)</label>
-                        <div class="date-range">
-                            <div class="date-group">
-                                <label for="startDate" style="font-size: 0.9em;">Start Date</label>
-                                <input type="date" id="startDate">
-                            </div>
-                            <div class="date-group">
-                                <label for="endDate" style="font-size: 0.9em;">End Date</label>
-                                <input type="date" id="endDate">
-                            </div>
-                        </div>
-                        <small style="color: #666;">Leave empty for all dates</small>
-                    </div>
+    <div id="kpSections"></div>
 
-                    <div class="btn-group">
-                        <button class="btn btn-success" id="generateBtn" disabled>🚀 Generate Report</button>
-                        <button class="btn btn-primary" id="clearBtn">🗑️ Clear All</button>
-                    </div>
-                </div>
+    <div id="criticalSection">
+      <h2>Critical incidents overview</h2>
+      <p id="criticalNarrative"></p>
+    </div>
 
-                <div class="status" id="uploadStatus"></div>
-                <div class="progress-bar" id="progressBar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
+    <div id="recommendSection">
+      <h2>Next-year safety priorities</h2>
+      <p id="recommendIntro"></p>
+      <ul id="recommendList"></ul>
+    </div>
+  </div>
 
-                <div class="preview-section" id="previewSection">
-                    <h2>📄 Safety Analysis Report</h2>
-                    <div class="preview-report" id="previewReport"></div>
-                    <button class="btn btn-primary download-btn" id="downloadPDFBtn" style="display: none;">⬇️ Download PDF Report</button>
-                </div>
+  <script>
+    let observations = [];
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const wb = XLSX.read(ev.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws);
+        observations = data.map(row => ({
+          date: row.Date || row.date,
+          kp: row.KP || row.kp,
+          risk: row.Risk || row.risk,
+          category: row.Category || row.category,
+          location: row.Location || row.location,
+          description: row.Description || row.description,
+        }));
+        alert(`Loaded ${observations.length} rows from Excel.`);
+      };
+      reader.readAsBinaryString(file);
+    });
+
+    document.getElementById('generateBtn').addEventListener('click', generateReport);
+    document.getElementById('pdfBtn').addEventListener('click', makePDF);
+
+    async function generateReport() {
+      if (!observations.length) {
+        alert('Upload Excel first.');
+        return;
+      }
+
+      const kpFocus = document.getElementById('kpFocus').value.trim() || null;
+      const start = document.getElementById('periodStart').value || null;
+      const end = document.getElementById('periodEnd').value || null;
+      const emphasis = document.getElementById('emphasis').value.trim() || null;
+
+      const body = JSON.stringify({
+        data: observations,
+        userOptions: { kpFocus, start, end, emphasis }
+      });
+
+      const res = await fetch('/.netlify/functions/analyze-index', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      });
+
+      const report = await res.json();
+      // report is expected to already contain the structured numbers & text.
+
+      fillOverview(report.overview);
+      fillKPs(report.kps);
+      fillCritical(report.critical);
+      fillRecommendations(report.recommendations);
+    }
+
+    function fillOverview(o) {
+      document.getElementById('reportMeta').textContent =
+        `${o.kpLabel} – ${o.yearLabel}`;
+      const cards = document.getElementById('summaryCards');
+      cards.innerHTML = '';
+      const items = [
+        { title: 'Total observations', value: o.totalObservations },
+        { title: 'High-risk cases', value: o.highRiskLabel },
+        { title: 'Positive observations', value: o.positiveLabel },
+        { title: 'Period', value: o.periodLabel }
+      ];
+      items.forEach(i => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<div class="card-title">${i.title}</div>
+                         <div class="card-value">${i.value}</div>`;
+        cards.appendChild(div);
+      });
+      document.getElementById('summaryNarrative').textContent = o.narrative;
+    }
+
+    function fillKPs(kps) {
+      const container = document.getElementById('kpSections');
+      container.innerHTML = '';
+      kps.forEach(kp => {
+        const section = document.createElement('div');
+        section.innerHTML = `
+          <div class="kp-header">
+            <h2>${kp.title}</h2>
+            <div class="tagline">
+              Total: ${kp.total} | High‑risk: <span class="highlight">${kp.highRiskLabel}</span> |
+              Period: ${kp.periodLabel}
             </div>
-        </div>
-    </div>
+          </div>
+          <h3>All cases with dates</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Issue</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kp.rows.map(r => `
+                <tr>
+                  <td>${r.date}</td>
+                  <td>${r.category}</td>
+                  <td>${r.location}</td>
+                  <td>${r.issue}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <h3>Main themes</h3>
+          <ul>
+            ${kp.keyIssues.map(i => `<li>${i}</li>`).join('')}
+          </ul>
+        `;
+        container.appendChild(section);
+      });
+    }
 
-    <script>
-        let currentObservations = null;
-        let isDataLoaded = false;
+    function fillCritical(c) {
+      document.getElementById('criticalNarrative').textContent = c.narrative;
+    }
 
-        const uploadBox = document.getElementById('uploadBox');
-        const fileInput = document.getElementById('fileInput');
-        const inputSection = document.getElementById('inputSection');
-        const generateBtn = document.getElementById('generateBtn');
-        const downloadPDFBtn = document.getElementById('downloadPDFBtn');
-        const clearBtn = document.getElementById('clearBtn');
+    function fillRecommendations(r) {
+      document.getElementById('recommendIntro').textContent = r.intro;
+      const list = document.getElementById('recommendList');
+      list.innerHTML = '';
+      r.items.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${item.title}.</strong> ${item.text}`;
+        list.appendChild(li);
+      });
+    }
 
-        // Click to upload
-        uploadBox.addEventListener('click', (e) => {
-            if (!isDataLoaded) fileInput.click();
-        });
-
-        // Drag and drop
-        uploadBox.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadBox.classList.add('drag-over');
-        });
-        uploadBox.addEventListener('dragleave', () => {
-            uploadBox.classList.remove('drag-over');
-        });
-        uploadBox.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadBox.classList.remove('drag-over');
-            handleFileUpload(e.dataTransfer.files[0]);
-        });
-
-        // File input change
-        fileInput.addEventListener('change', (e) => {
-            handleFileUpload(e.target.files[0]);
-        });
-
-        // Generate button
-        generateBtn.addEventListener('click', generateReport);
-
-        // Clear button
-        clearBtn.addEventListener('click', clearAll);
-
-        function handleFileUpload(file) {
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
-                    const ws = workbook.Sheets[workbook.SheetNames[0]];
-                    const data = XLSX.utils.sheet_to_json(ws);
-
-                    if (data.length === 0) {
-                        showStatus('❌ No data found in Excel file', 'error');
-                        return;
-                    }
-
-                    // Parse observations
-                    currentObservations = data.map(row => ({
-                        risk: row.Risk || row.risk || 'MEDIUM',
-                        category: row.Category || row.category || 'Other',
-                        location: row.Location || row.location || '',
-                        description: row.Description || row.description || '',
-                        status: row.Status || row.status || 'Open',
-                        inspector: row.Inspector || row.inspector || 'Unknown',
-                        site: row.Site || row.site || 'Unknown Site'
-                    }));
-
-                    isDataLoaded = true;
-                    uploadBox.classList.add('has-data');
-                    uploadBox.querySelector('h2').textContent = `✅ ${currentObservations.length} Observations Loaded`;
-                    uploadBox.querySelector('p').textContent = 'Data ready! Configure report below.';
-                    
-                    inputSection.style.display = 'block';
-                    generateBtn.disabled = false;
-                    showStatus(`✅ Loaded ${currentObservations.length} observations`, 'success');
-
-                } catch (error) {
-                    showStatus(`❌ Error reading file: ${error.message}`, 'error');
-                }
-            };
-            reader.readAsBinaryString(file);
-        }
-
-        async function generateReport() {
-            if (!currentObservations) {
-                showStatus('❌ Please upload data first', 'error');
-                return;
-            }
-
-            document.getElementById('previewSection').style.display = 'block';
-            document.getElementById('progressBar').style.display = 'block';
-            document.getElementById('progressFill').style.width = '25%';
-            document.getElementById('previewReport').textContent = '⏳ Generating focused report...';
-            generateBtn.disabled = true;
-
-            try {
-                document.getElementById('progressFill').style.width = '50%';
-
-                // Get user inputs
-                const kpFocus = document.getElementById('kpFocus').value.trim();
-                const extraNotes = document.getElementById('extraNotes').value.trim();
-                const startDate = document.getElementById('startDate').value;
-                const endDate = document.getElementById('endDate').value;
-
-                // Filter data based on user inputs
-                let filteredObservations = [...currentObservations];
-
-                // Filter by KP focus
-                if (kpFocus) {
-                    const kpTerms = kpFocus.toLowerCase().split(',').map(term => term.trim());
-                    filteredObservations = filteredObservations.filter(obs => 
-                        kpTerms.some(term => 
-                            obs.category.toLowerCase().includes(term) || 
-                            obs.description.toLowerCase().includes(term) ||
-                            obs.risk.toLowerCase().includes(term)
-                        )
-                    );
-                }
-
-                // Filter by date range (if dates are available in data)
-                if (startDate || endDate) {
-                    filteredObservations = filteredObservations.filter(obs => {
-                        // Assuming date might be in description or other fields
-                        const obsDate = new Date(obs.description.match(/\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}/)?.[0] || Date.now());
-                        return (!startDate || obsDate >= new Date(startDate)) &&
-                               (!endDate || obsDate <= new Date(endDate));
-                    });
-                }
-
-                document.getElementById('progressFill').style.width = '75%';
-
-                // Send filtered data to backend
-                const response = await fetch('/.netlify/functions/analyze', {
-                    method: 'POST',
-                    body: JSON.stringify({ 
-                        data: filteredObservations,
-                        siteInfo: {
-                            siteName: filteredObservations[0]?.site || 'Multiple Sites',
-                            inspectorName: filteredObservations[0]?.inspector || 'Safety Team',
-                            inspectionDate: new Date().toLocaleDateString()
-                        },
-                        userOptions: {
-                            kpFocus,
-                            extraNotes,
-                            startDate,
-                            endDate,
-                            totalObservations: currentObservations.length,
-                            filteredCount: filteredObservations.length
-                        }
-                    }),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Server error');
-                }
-
-                const result = await response.json();
-                document.getElementById('progressFill').style.width = '95%';
-                document.getElementById('previewReport').textContent = result.analysis;
-
-                // Show download button
-                downloadPDFBtn.style.display = 'block';
-                document.getElementById('progressBar').style.display = 'none';
-                document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
-
-            } catch (error) {
-                document.getElementById('previewReport').textContent = `❌ Error: ${error.message}\n\nMake sure the API key is configured.`;
-                document.getElementById('progressBar').style.display = 'none';
-                generateBtn.disabled = false;
-            }
-        }
-
-        function downloadPDF() {
-            const reportElement = document.getElementById('previewReport');
-            const reportText = reportElement.textContent;
-            const date = new Date().toISOString().split('T')[0];
-
-            const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>SISKON Safety Report - ${date}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
-            line-height: 1.6;
-            padding: 40px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .header h1 { margin: 0 0 10px 0; font-size: 28px; }
-        .header p { margin: 0; opacity: 0.9; }
-        .report-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            line-height: 1.6;
-            border-left: 5px solid #667eea;
-        }
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #999;
-            font-size: 10px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        @media print {
-            body { padding: 20px; }
-            .header { box-shadow: none; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🛡️ SISKON Safety Report</h1>
-        <p>Generated on ${new Date().toLocaleString()} | ${date}</p>
-    </div>
-    <div class="report-content">${reportText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-    <div class="footer">
-        <p>SISKON Safety Report Generator | Professional Safety Analysis</p>
-    </div>
-</body>
-</html>`;
-
-            html2pdf().set({
-                margin: [15, 15, 15, 15],
-                filename: `SISKON-Safety-Report-${date}.pdf`,
-                html2canvas: { 
-                    scale: 2,
-                    useCORS: true,
-                    letterRendering: true
-                },
-                jsPDF: { 
-                    orientation: 'portrait', 
-                    unit: 'mm', 
-                    format: 'a4',
-                    compress: true
-                }
-            }).from(htmlContent).save();
-        }
-
-        function clearAll() {
-            currentObservations = null;
-            isDataLoaded = false;
-            uploadBox.classList.remove('has-data');
-            uploadBox.querySelector('h2').textContent = 'Upload Safety Data';
-            uploadBox.querySelector('p').textContent = 'Drag your Excel file here or click to browse';
-            inputSection.style.display = 'none';
-            document.getElementById('previewSection').style.display = 'none';
-            generateBtn.disabled = true;
-            downloadPDFBtn.style.display = 'none';
-            fileInput.value = '';
-            document.getElementById('kpFocus').value = '';
-            document.getElementById('extraNotes').value = '';
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            showStatus('🧹 Cleared all data', 'success');
-        }
-
-        function showStatus(msg, type) {
-            const el = document.getElementById('uploadStatus');
-            el.innerHTML = msg;
-            el.className = `status ${type}`;
-            setTimeout(() => {
-                if (type !== 'success') el.style.display = 'none';
-            }, 5000);
-        }
-
-        // Fix PDF button event
-        downloadPDFBtn.addEventListener('click', downloadPDF);
-    </script>
+    function makePDF() {
+      const element = document.querySelector('.page');
+      const fileName = 'Occupational-Safety-Analysis.pdf';
+      html2pdf().set({
+        margin: 10,
+        filename: fileName,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(element).save();
+    }
+  </script>
 </body>
 </html>
