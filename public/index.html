@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISKON Safety Report Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.8em; margin-bottom: 15px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 1em;
+            margin-top: 15px;
+        }
+        .content { padding: 60px 40px; text-align: center; }
+        .upload-section {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 50px 30px;
+            cursor: pointer;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            margin: 30px 0;
+        }
+        .upload-box:hover { 
+            border-color: #764ba2; 
+            background: #f0f2ff;
+            transform: scale(1.02);
+        }
+        .upload-box.drag-over { 
+            border-color: #764ba2; 
+            background: #e6e8ff;
+        }
+        .upload-icon { font-size: 4em; margin-bottom: 15px; }
+        .upload-box h2 { color: #333; margin-bottom: 10px; font-size: 1.5em; }
+        .upload-box p { color: #666; font-size: 1em; margin-bottom: 15px; }
+        #fileInput { display: none; }
+        .btn {
+            display: inline-block;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 20px rgba(102,126,234,0.3); 
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+            font-weight: 500;
+            font-size: 1em;
+        }
+        .status.loading { background: #e3f2fd; color: #1976d2; display: block; }
+        .status.success { background: #e8f5e9; color: #388e3c; display: block; }
+        .status.error { background: #ffebee; color: #d32f2f; display: block; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .preview-section {
+            background: #f9f9f9;
+            padding: 40px;
+            border-radius: 12px;
+            margin-top: 40px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .preview-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .preview-report {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.8;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .download-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px;
+            font-size: 1.1em;
+        }
+        .info-text {
+            color: #666;
+            font-size: 0.95em;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2em; }
+            .content { padding: 30px 20px; }
+            .upload-box { padding: 30px 20px; }
+            .upload-icon { font-size: 3em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ SISKON Safety Report Generator</h1>
+            <p>Professional Safety Analysis & Reporting</p>
+            <div class="badge">✨ Upload Excel • Generate Report Instantly</div>
+        </div>
+        
+        <div class="content">
+            <div class="upload-section">
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">📊</div>
+                    <h2>Upload Safety Data</h2>
+                    <p>Drag your Excel file here or click to browse</p>
+                    <button class="btn btn-primary">Choose Excel File</button>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                    <div class="info-text">
+                        <strong>File Format:</strong><br>
+                        Columns needed: Risk, Category, Location, Description<br>
+                        (Optional: Status, Inspector, Site)
+                    </div>
+                </div>
+
+                <div class="status" id="uploadStatus"></div>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="preview-section" id="previewSection">
+                    <h2>📄 Safety Analysis Report</h2>
+                    <div class="preview-report" id="previewReport"></div>
+                    <button class="btn btn-primary download-btn" onclick="downloadPDF()">⬇️ Download PDF Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+
+        // Click to upload
+        uploadBox.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('drag-over');
+        });
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('drag-over');
+        });
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            handleFileUpload(e.dataTransfer.files[0]);
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files[0]);
+        });
+
+        function handleFileUpload(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    const ws = workbook.Sheets[workbook.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(ws);
+
+                    if (data.length === 0) {
+                        showStatus('❌ No data found in Excel file', 'error');
+                        return;
+                    }
+
+                    // Parse observations
+                    const observations = data.map(row => ({
+                        risk: row.Risk || row.risk || 'MEDIUM',
+                        category: row.Category || row.category || 'Other',
+                        location: row.Location || row.location || '',
+                        description: row.Description || row.description || '',
+                        status: row.Status || row.status || 'Open',
+                        inspector: row.Inspector || row.inspector || 'Unknown',
+                        site: row.Site || row.site || 'Unknown Site'
+                    }));
+
+                    showStatus(`✅ Loaded ${observations.length} observations from Excel`, 'success');
+                    generateReport(observations);
+
+                } catch (error) {
+                    showStatus(`❌ Error reading file: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        async function generateReport(observations) {
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressFill').style.width = '25%';
+            document.getElementById('previewReport').textContent = '⏳ Analyzing data...';
+            document.getElementById('uploadStatus').style.display = 'none';
+
+            try {
+                document.getElementById('progressFill').style.width = '50%';
+
+                // Send to backend
+                const response = await fetch('/.netlify/functions/analyze', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        data: observations,
+                        siteInfo: {
+                            siteName: observations[0]?.site || 'Unknown Site',
+                            inspectorName: observations[0]?.inspector || 'Unknown',
+                            inspectionDate: new Date().toLocaleDateString()
+                        }
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                document.getElementById('progressFill').style.width = '75%';
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Server error');
+                }
+
+                const result = await response.json();
+                document.getElementById('progressFill').style.width = '95%';
+                document.getElementById('previewReport').textContent = result.analysis;
+
+                setTimeout(() => {
+                    document.getElementById('progressFill').style.width = '100%';
+                    setTimeout(() => {
+                        document.getElementById('progressBar').style.display = 'none';
+                        document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }, 200);
+
+            } catch (error) {
+                document.getElementById('previewReport').textContent = `❌ Error: ${error.message}\n\nMake sure the API key is configured in Netlify environment variables.`;
+                document.getElementById('progressBar').style.display = 'none';
+            }
+        }
+
+        function downloadPDF() {
+            const reportText = document.getElementById('previewReport').textContent;
+            const date = new Date().toISOString().split('T')[0];
+
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SISKON Safety Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.8;
+            padding: 30px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .report-content {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #999;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ SISKON Safety Report</h1>
+        <p>Generated on ${new Date().toLocaleString()}</p>
+    </div>
+    <div class="report-content">${reportText}</div>
+    <div class="footer">
+        <p>SISKON Safety Report Generator | ${date}</p>
+    </div>
+</body>
+</html>`;
+
+            html2pdf().set({
+                margin: 10,
+                filename: `SISKON-Safety-Report-${date}.pdf`,
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            }).from(document.createElement('div')).html(htmlContent).save();
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('uploadStatus');
+            el.innerHTML = msg;
+            el.className = `status ${type}`;
+            setTimeout(() => {
+                if (type !== 'success') {
+                    el.style.display = 'none';
+                }
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

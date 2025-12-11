@@ -1,0 +1,9 @@
+{
+  "name": "siskon-safety-app",
+  "version": "1.0.0",
+  "description": "SISKON Safety Report Generator",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "npm install"
+  }
+}
