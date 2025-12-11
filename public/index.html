@@ -23,8 +23,6 @@
         --input-bg: #020617;
         --input-border: #1f2937;
         --input-border-focus: #0ea5e9;
-        --badge-bg: #020617;
-        --badge-text: #e5e7eb;
       }
 
       * {
@@ -127,32 +125,6 @@
         color: var(--muted);
       }
 
-      .model-tag {
-        padding: 6px 11px;
-        border-radius: 999px;
-        background: radial-gradient(
-          circle at top left,
-          rgba(56, 189, 248, 0.18),
-          rgba(15, 23, 42, 0.4)
-        );
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #e0f2fe;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .model-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 999px;
-        background: #4ade80;
-        box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.2);
-      }
-
       .section-label {
         font-size: 0.7rem;
         text-transform: uppercase;
@@ -169,19 +141,6 @@
         margin-bottom: 14px;
         position: relative;
         overflow: hidden;
-      }
-
-      .input-card::before {
-        content: "";
-        position: absolute;
-        inset: -40%;
-        background: radial-gradient(
-          circle at top left,
-          rgba(56, 189, 248, 0.12),
-          transparent 65%
-        );
-        opacity: 0.9;
-        pointer-events: none;
       }
 
       .input-card-inner {
@@ -264,25 +223,8 @@
         flex-wrap: wrap;
         gap: 6px;
         margin-bottom: 10px;
-      }
-
-      .badge {
-        padding: 4px 9px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.82);
-        border: 1px solid rgba(148, 163, 184, 0.5);
         font-size: 0.7rem;
-        color: #e5e7eb;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .badge-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: #38bdf8;
+        color: var(--muted);
       }
 
       .checkbox-row {
@@ -406,19 +348,6 @@
         overflow: hidden;
       }
 
-      .output-card::before {
-        content: "";
-        position: absolute;
-        inset: -25%;
-        background: radial-gradient(
-          circle at top right,
-          rgba(56, 189, 248, 0.16),
-          transparent 65%
-        );
-        opacity: 0.7;
-        pointer-events: none;
-      }
-
       .output-inner {
         position: relative;
         z-index: 1;
@@ -533,15 +462,11 @@
           <div class="app-title-group">
             <div class="app-title">
               SISKON Safety Reports
-              <span class="app-badge">Internal Generator</span>
+              <span class="app-badge">Internal tool</span>
             </div>
             <div class="app-subtitle">
               Generate structured summaries from occupational safety observations
             </div>
-          </div>
-          <div class="model-tag">
-            <span class="model-dot"></span>
-            AI Report Engine
           </div>
         </header>
 
@@ -550,14 +475,19 @@
           <span id="errorText">Something went wrong. Please try again.</span>
         </div>
 
-        <div class="section-label">Input</div>
+        <div class="section-label">Data & settings</div>
         <div class="input-card">
           <div class="input-card-inner">
-            <div class="badge-row">
-              <span class="badge">
-                <span class="badge-dot"></span>
-                CSV / Excel source: Occupational safety observations
-              </span>
+            <div class="form-group">
+              <label for="file_input">Upload observations file (.xlsx or .csv)</label>
+              <input
+                type="file"
+                id="file_input"
+                accept=".xlsx,.xls,.csv"
+              />
+              <div class="hint">
+                Use the exported occupational safety observations file from your system.
+              </div>
             </div>
 
             <div class="form-row">
@@ -595,9 +525,7 @@
             </div>
 
             <div class="form-group">
-              <label for="report_purpose"
-                >What kind of report do you need?</label
-              >
+              <label for="report_purpose">What kind of report do you need?</label>
               <select id="report_purpose">
                 <option value="Management safety summary">
                   Management safety summary (high-level, with key themes and
@@ -629,15 +557,15 @@
               />
               <div class="small-kpi-hint">
                 You can write any free text here (a single KP, several KPs, or a
-                thematic description). The generator will treat this as the main
-                focus line for the report.
+                thematic description). This will be used as the main focus line
+                for the report.
               </div>
             </div>
 
             <div class="form-group">
-              <label for="extra_notes"
-                >Anything else the report should emphasize?</label
-              >
+              <label for="extra_notes">
+                Anything else the report should emphasize?
+              </label>
               <textarea
                 id="extra_notes"
                 placeholder="Example: “Highlight positive safety behaviour examples and concrete corrective actions. Group by customer site and include practical tips for supervisors.”"
@@ -661,15 +589,15 @@
                 </label>
               </div>
               <div class="hint">
-                The generator will always anonymize individuals and respect
-                confidentiality. It will not copy any source text directly.
+                The tool will summarise and paraphrase; it will not copy source
+                text directly or expose any personal data.
               </div>
             </div>
 
             <div class="generate-row">
               <div class="generate-left">
                 <div class="generate-meta">
-                  Source: <strong>Occupational safety observations data</strong>
+                  Source: <strong>Uploaded observations file</strong>
                 </div>
                 <div class="generate-meta">
                   Output: <strong>Clean, ready-to-send report text</strong>
@@ -716,15 +644,16 @@
               <div class="output-placeholder">
                 <div class="output-placeholder-icon">🧾</div>
                 <div class="output-placeholder-text">
-                  Fill in the fields on the left and click “Generate report”.<br />
+                  Upload a file, fill in the fields on the left and click
+                  “Generate report”.<br />
                   The report will appear here as structured, ready-to-use text.
                 </div>
               </div>
             </div>
 
             <div class="footer-hint">
-              The AI will use only the selected observation data and your
-              instructions. It will not invent customers, people or events.
+              Only the uploaded data and your instructions are used to prepare
+              the report text.
             </div>
           </div>
         </div>
@@ -764,7 +693,7 @@
         errorBanner.style.display = "none";
       }
 
-      function buildPrompt() {
+      function buildPrompt(fileName) {
         const selectedLanguage = document.getElementById("language").value;
         const timeRange = document.getElementById("time_range").value;
         const siteFocus = document.getElementById("site_focus").value.trim();
@@ -804,12 +733,12 @@
         }
 
         return `
-You are helping to write an internal occupational safety report for Siskon Siivous.
+You are preparing an internal occupational safety report for Siskon Siivous.
 
 Write the report in: ${selectedLanguage}.
 
 Data source:
-- Structured export of occupational safety observations (CSV/Excel) from Siskon Siivous.
+- Uploaded observations file: ${fileName}
 - Columns include (among others): Created, Updated, Title, Owner, Person in charge, Customer site, Cost center (KP), Employee, Name of the informant, Location, Date, Description of the situation, Share your opinion (how the situation could have been avoided or how to ensure it does not happen again), Category of the observation, Measures taken, Comments from the occupational safety organisation, Rewarded (yes/no).
 
 Context and scope:
@@ -821,33 +750,33 @@ Context and scope:
           extraNotes.length > 0 ? extraNotes : "None provided."
         }
 
-VERY IMPORTANT CONSTRAINTS:
-- You must NOT invent customers, people, or specific events that are not present in the data.
-- You must NOT copy any text directly from the source data. Always paraphrase and generalize.
+Important constraints:
+- Do not invent customers, people or specific events that are not present in the data.
+- Do not copy any text directly from the source data. Always paraphrase and generalise.
 - Treat all persons as anonymised employees or customers; do not use real names.
 - Respect confidentiality and do not include any personally identifying information.
 
-What you know about the data (summarised schema, not the full content):
-- There are many observations from different customer sites (e.g. hotels, gyms, schools, offices, residential buildings).
-- Categories include things like: slips and falls, sharp objects, electrical risks, fire safety, broken equipment, poor lighting, threatening situations, positive safety behaviour, etc.
-- Many observations include both the situation and suggested corrective actions or safety reminders.
+What you know about the data (schema level):
+- Many observations from different customer sites (e.g. hotels, gyms, schools, offices, residential buildings).
+- Categories can include: slips and falls, sharp objects, electrical risks, fire safety, broken equipment, poor lighting, threatening situations, positive safety behaviour, etc.
+- Observations often include both the situation and suggested corrective actions or safety reminders.
 - The “KP” field is a cost center / customer identifier, such as KP 88, KP 820, etc.
 
 Your task:
 1. Assume you have access to all observations that match the time window and site/KP focus.
-2. From those, you will write a **coherent safety report** tailored to the requested purpose.
+2. From those, write a coherent safety report tailored to the requested purpose.
 3. Focus especially on the KP-related focus text the user gave: "${kpiFocus}".
    - This might name one KP (e.g. "KP 88") or describe a theme ("KP 88 slips and trips", "KP 820 near misses").
    - Treat it as the central lens through which you select and group insights.
 
-Report structure (guideline – adapt as needed, but keep it compact and practical):
+Suggested report structure:
 - Short introduction: 2–3 sentences explaining what the report covers (sites/KPs, time window, purpose).
 - Key themes and findings:
   - 2–4 main bullet points summarising the most important safety themes, repeating patterns or trends.
   - If relevant, highlight which KP(s) or customer sites are most visible in each theme.
 - Concrete examples:
   - 2–4 brief anonymised examples that illustrate different types of observations (e.g. sharp object, near miss, equipment failure, positive safety behaviour).
-  - Do NOT quote the original texts; describe them generally.
+  - Do not quote the original texts; describe them generally.
 - Corrective and preventive actions:
   - 3–7 practical, actionable recommendations that supervisors and teams can implement.
   - Link them to the typical categories (e.g. slips and falls, electrical risks, threatening situations, etc.).
@@ -862,30 +791,34 @@ Formatting preferences:
         }.
 - Keep the whole report reasonably concise (roughly 0.5–1 A4 page in normal font size).
 - Use neutral, professional language.
-- Do not mention that you are an AI or that you are “assuming” anything; write as a standard internal report.
 
-Remember:
-- You do NOT see the raw observations in this prompt, only the schema and the user’s instructions.
-- Still, you should write as if you have analysed the relevant subset of observations.
-- Focus on patterns, themes and realistic example types that fit the description (but do not fabricate exotic or unlikely scenarios).
-
-Now write the full report text only, without any additional explanation or meta-commentary.
+Now write only the full report text, without any additional explanation or meta-commentary.
         `.trim();
       }
 
-      async function fakeCallToModel(prompt) {
+      async function fakeBackendCall(prompt) {
+        // Placeholder: replace this with a real backend call later.
         return (
           "Safety report (demo mode)\n\n" +
           "This is where the generated report text will appear " +
-          "once the AI backend is wired to this prompt."
+          "once the backend is connected."
         );
       }
 
       generateBtn.addEventListener("click", async () => {
         hideError();
+
+        const fileInput = document.getElementById("file_input");
+        const file = fileInput.files[0];
+
+        if (!file) {
+          showError("Please upload an observations file first.");
+          return;
+        }
+
         setGenerating(true);
         try {
-          const prompt = buildPrompt();
+          const prompt = buildPrompt(file.name);
 
           const selectedLanguage =
             document.getElementById("language").value;
@@ -898,10 +831,11 @@ Now write the full report text only, without any additional explanation or meta-
           metaSiteFocus.textContent =
             siteFocus.length > 0 ? siteFocus : "All sites / KPs";
 
-          const reportText = await fakeCallToModel(prompt);
+          const reportText = await fakeBackendCall(prompt);
 
           outputEl.textContent = reportText;
         } catch (e) {
+          console.error(e);
           showError(
             "Failed to generate report. Please check your connection and try again."
           );
