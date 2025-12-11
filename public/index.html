@@ -178,7 +178,7 @@
                     </div>
                 </div>
 
-                <!-- NEW: KP focus and extra notes -->
+                <!-- KP focus and extra notes -->
                 <div class="info-text" style="text-align:left; margin-top:20px;">
                     <label for="kpFocus"><strong>KP focus (free text)</strong></label><br>
                     <input
@@ -195,6 +195,32 @@
                         placeholder="Example: highlight positive safety behaviour and concrete corrective actions; group by customer site."
                         style="width:100%; margin-top:6px; padding:8px; border-radius:6px; border:1px solid #ccc;"
                     ></textarea>
+                </div>
+
+                <!-- Date range -->
+                <div class="info-text" style="text-align:left; margin-top:20px;">
+                    <label><strong>Date range (optional)</strong></label><br>
+                    <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:120px;">
+                            <label for="startDate" style="font-size:0.9em;">Start date</label><br>
+                            <input
+                                type="date"
+                                id="startDate"
+                                style="width:100%; margin-top:4px; padding:6px; border-radius:6px; border:1px solid #ccc;"
+                            >
+                        </div>
+                        <div style="flex:1; min-width:120px;">
+                            <label for="endDate" style="font-size:0.9em;">End date</label><br>
+                            <input
+                                type="date"
+                                id="endDate"
+                                style="width:100%; margin-top:4px; padding:6px; border-radius:6px; border:1px solid #ccc;"
+                            >
+                        </div>
+                    </div>
+                    <div style="margin-top:6px; font-size:0.9em;">
+                        Leave empty to use all dates in the file.
+                    </div>
                 </div>
 
                 <div class="status" id="uploadStatus"></div>
@@ -285,8 +311,10 @@
 
                 const kpFocus = document.getElementById('kpFocus').value.trim() || null;
                 const extraNotes = document.getElementById('extraNotes').value.trim() || null;
+                const startDate = document.getElementById('startDate').value || null;
+                const endDate = document.getElementById('endDate').value || null;
 
-                // Send to backend, now including KP focus and extra notes
+                // Send to backend, including KP focus, notes, and date range
                 const response = await fetch('/.netlify/functions/analyze', {
                     method: 'POST',
                     body: JSON.stringify({ 
@@ -298,7 +326,9 @@
                         },
                         userOptions: {
                             kpFocus,
-                            extraNotes
+                            extraNotes,
+                            startDate,
+                            endDate
                         }
                     }),
                     headers: { 'Content-Type': 'application/json' }
