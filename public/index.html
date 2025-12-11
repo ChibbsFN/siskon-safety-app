@@ -228,6 +228,620 @@
       }
 
       .checkbox-pill {
-        display
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        font-size: 0.7rem;
+        color: #e5e7eb;
+      }
 
-      
+      .checkbox-pill input[type="checkbox"] {
+        width: 12px;
+        height: 12px;
+        accent-color: #38bdf8;
+      }
+
+      .hint {
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+
+      .generate-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .generate-left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .generate-meta {
+        font-size: 0.7rem;
+        color: #9ca3af;
+      }
+
+      .generate-meta strong {
+        color: #e5e7eb;
+      }
+
+      .generate-button {
+        padding: 8px 18px;
+        border-radius: 999px;
+        border: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        color: #0f172a;
+        background: radial-gradient(circle at top left, #38bdf8, #0ea5e9);
+        box-shadow: 0 12px 25px rgba(8, 47, 73, 0.7);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .generate-button:disabled {
+        opacity: 0.6;
+        cursor: default;
+        box-shadow: none;
+      }
+
+      .generate-spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        border: 2px solid rgba(15, 23, 42, 0.1);
+        border-top-color: #0f172a;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-banner {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        border-radius: 9px;
+        background: rgba(239, 68, 68, 0.11);
+        border: 1px solid rgba(248, 113, 113, 0.5);
+        color: #fecaca;
+        font-size: 0.72rem;
+        margin-bottom: 10px;
+      }
+
+      .error-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--danger);
+      }
+
+      .output-card {
+        background: radial-gradient(circle at top right, #020617, #020617 60%);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        padding: 14px 16px 12px;
+        min-height: 200px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .output-inner {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .output-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .output-title {
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #9ca3af;
+      }
+
+      .output-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .output-meta-pill {
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        color: #e5e7eb;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .output-meta-pill span.dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #4ade80;
+      }
+
+      .output-body {
+        flex: 1;
+        min-height: 180px;
+        padding: 10px 10px 8px;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: #e5e7eb;
+        white-space: pre-wrap;
+        overflow: auto;
+      }
+
+      .output-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        color: #6b7280;
+        gap: 6px;
+      }
+
+      .output-placeholder-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+      }
+
+      .output-placeholder-text {
+        font-size: 0.78rem;
+      }
+
+      .small-kpi-hint {
+        font-size: 0.7rem;
+        color: var(--muted);
+        margin-top: -2px;
+        margin-bottom: 6px;
+      }
+
+      .footer-hint {
+        font-size: 0.7rem;
+        color: #6b7280;
+        margin-top: 8px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-frame">
+      <div class="left-pane">
+        <header class="app-header">
+          <div class="app-title-group">
+            <div class="app-title">
+              SISKON Safety Reports
+              <span class="app-badge">Internal tool</span>
+            </div>
+            <div class="app-subtitle">
+              Generate structured summaries from occupational safety observations
+            </div>
+          </div>
+        </header>
+
+        <div id="errorBanner" class="error-banner">
+          <span class="error-dot"></span>
+          <span id="errorText">Something went wrong. Please try again.</span>
+        </div>
+
+        <div class="section-label">Data &amp; settings</div>
+        <div class="input-card">
+          <div class="input-card-inner">
+            <div class="form-group">
+              <label for="file_input">Upload observations file (.xlsx or .csv)</label>
+              <input
+                type="file"
+                id="file_input"
+                accept=".xlsx,.xls,.csv"
+              />
+              <div class="hint">
+                Use the exported occupational safety observations file from your system.
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="language">Report language</label>
+                <select id="language">
+                  <option value="English">English</option>
+                  <option value="Finnish">Finnish</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="time_range">Time window</label>
+                <select id="time_range">
+                  <option value="Last 7 days">Last 7 days</option>
+                  <option value="Last 30 days" selected>Last 30 days</option>
+                  <option value="This calendar year">This calendar year</option>
+                  <option value="Custom period (describe in notes)">
+                    Custom period (describe in notes)
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="site_focus">Customer site or group to focus on</label>
+              <input
+                type="text"
+                id="site_focus"
+                placeholder="Example: “All Scandic hotels” or “Greenstar Hotel Jyväskylä (KP 88)” or “All KP 88 observations”"
+              />
+              <div class="hint">
+                You can write one site, several sites, a KP cost center, or leave
+                empty to use all observations.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="report_purpose">What kind of report do you need?</label>
+              <select id="report_purpose">
+                <option value="Management safety summary">
+                  Management safety summary (high-level, with key themes and
+                  actions)
+                </option>
+                <option value="Team safety meeting material">
+                  Team safety meeting material (practical examples and talking
+                  points)
+                </option>
+                <option value="Customer-facing summary">
+                  Customer-facing summary (polished, focus on improvements and
+                  follow-up)
+                </option>
+                <option value="Root cause and trend analysis">
+                  Root cause and trend analysis (categories, patterns, repeated
+                  risks)
+                </option>
+              </select>
+            </div>
+
+            <!-- KP free-text focus field -->
+            <div class="form-group">
+              <label for="kpi_focus">
+                What KP should this report focus on?
+              </label>
+              <input
+                type="text"
+                id="kpi_focus"
+                placeholder="Example: KP 88 slips and trips, or “focus especially on KP 820 near misses”"
+              />
+              <div class="small-kpi-hint">
+                You can write any free text here (a single KP, several KPs, or a
+                theme). This will be used as the main focus line for the report.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="extra_notes">
+                Anything else the report should emphasize?
+              </label>
+              <textarea
+                id="extra_notes"
+                placeholder="Example: “Highlight positive safety behaviour examples and concrete corrective actions. Group by customer site and include practical tips for supervisors.”"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Formatting options</label>
+              <div class="checkbox-row">
+                <label class="checkbox-pill">
+                  <input type="checkbox" id="include_bullets" checked />
+                  Bullet lists for key points
+                </label>
+                <label class="checkbox-pill">
+                  <input type="checkbox" id="include_headings" checked />
+                  Clear section headings
+                </label>
+                <label class="checkbox-pill">
+                  <input type="checkbox" id="include_examples" checked />
+                  Include concrete example cases
+                </label>
+              </div>
+              <div class="hint">
+                The tool will summarise and paraphrase; it will not copy source
+                text directly or expose any personal data.
+              </div>
+            </div>
+
+            <div class="generate-row">
+              <div class="generate-left">
+                <div class="generate-meta">
+                  Source: <strong>Uploaded observations file</strong>
+                </div>
+                <div class="generate-meta">
+                  Output: <strong>Clean, ready-to-send report text</strong>
+                </div>
+              </div>
+              <button id="generateBtn" class="generate-button" type="button">
+                <span
+                  id="generateSpinner"
+                  class="generate-spinner"
+                  style="display: none"
+                ></span>
+                <span id="generateLabel">Generate report</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-pane">
+        <div class="section-label">Report preview</div>
+        <div class="output-card">
+          <div class="output-inner">
+            <div class="output-header">
+              <div class="output-title">
+                Generated summary – ready to copy into email, Word or PowerPoint
+              </div>
+            </div>
+
+            <div class="output-meta-row">
+              <div class="output-meta-pill">
+                <span class="dot"></span>
+                Language: <span id="metaLanguage">English</span>
+              </div>
+              <div class="output-meta-pill">
+                Time window: <span id="metaTimeRange">Last 30 days</span>
+              </div>
+              <div class="output-meta-pill">
+                Site focus:
+                <span id="metaSiteFocus">All sites / KPs</span>
+              </div>
+            </div>
+
+            <div id="output" class="output-body">
+              <div class="output-placeholder">
+                <div class="output-placeholder-icon">🧾</div>
+                <div class="output-placeholder-text">
+                  Upload a file, fill in the fields on the left and click
+                  “Generate report”.<br />
+                  The report will appear here as structured, ready-to-use text.
+                </div>
+              </div>
+            </div>
+
+            <div class="footer-hint">
+              Only the uploaded data and your instructions are used to prepare
+              the report text.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const generateBtn = document.getElementById("generateBtn");
+      const generateSpinner = document.getElementById("generateSpinner");
+      const generateLabel = document.getElementById("generateLabel");
+      const outputEl = document.getElementById("output");
+      const errorBanner = document.getElementById("errorBanner");
+      const errorText = document.getElementById("errorText");
+
+      const metaLanguage = document.getElementById("metaLanguage");
+      const metaTimeRange = document.getElementById("metaTimeRange");
+      const metaSiteFocus = document.getElementById("metaSiteFocus");
+
+      function setGenerating(isGenerating) {
+        if (isGenerating) {
+          generateBtn.disabled = true;
+          generateSpinner.style.display = "inline-block";
+          generateLabel.textContent = "Generating…";
+        } else {
+          generateBtn.disabled = false;
+          generateSpinner.style.display = "none";
+          generateLabel.textContent = "Generate report";
+        }
+      }
+
+      function showError(message) {
+        errorText.textContent = message;
+        errorBanner.style.display = "flex";
+      }
+
+      function hideError() {
+        errorBanner.style.display = "none";
+      }
+
+      function buildPrompt(fileName) {
+        const selectedLanguage = document.getElementById("language").value;
+        const timeRange = document.getElementById("time_range").value;
+        const siteFocus = document.getElementById("site_focus").value.trim();
+        const reportPurpose =
+          document.getElementById("report_purpose").value;
+        const extraNotes = document.getElementById("extra_notes").value.trim();
+        const includeBullets =
+          document.getElementById("include_bullets").checked;
+        const includeHeadings =
+          document.getElementById("include_headings").checked;
+        const includeExamples =
+          document.getElementById("include_examples").checked;
+
+        const kpiFocusRaw =
+          document.getElementById("kpi_focus").value.trim();
+        const kpiFocus =
+          kpiFocusRaw || "No specific KP focus provided by the user";
+
+        const effectiveSiteFocus =
+          siteFocus.length > 0 ? siteFocus : "All available sites and KPs";
+
+        const formattingPrefs = [];
+        if (includeHeadings) {
+          formattingPrefs.push(
+            "use clear section headings (###) for main parts of the report"
+          );
+        }
+        if (includeBullets) {
+          formattingPrefs.push(
+            "use bullet lists for key points, themes and actions"
+          );
+        }
+        if (includeExamples) {
+          formattingPrefs.push(
+            "include a few concrete observation examples, anonymised"
+          );
+        }
+
+        return `
+You are preparing an internal occupational safety report for Siskon Siivous.
+
+Write the report in: ${selectedLanguage}.
+
+Data source:
+- Uploaded observations file: ${fileName}
+- Columns include (among others): Created, Updated, Title, Owner, Person in charge, Customer site, Cost center (KP), Employee, Name of the informant, Location, Date, Description of the situation, Share your opinion (how the situation could have been avoided or how to ensure it does not happen again), Category of the observation, Measures taken, Comments from the occupational safety organisation, Rewarded (yes/no).
+
+Context and scope:
+- Time window to consider: ${timeRange}.
+- Site / customer / KP focus requested by the user: ${effectiveSiteFocus}.
+- Report type / purpose: ${reportPurpose}.
+- User-provided report focus (KP-related or thematic): ${kpiFocus}.
+- Additional notes from the user: ${
+          extraNotes.length > 0 ? extraNotes : "None provided."
+        }
+
+Important constraints:
+- Do not invent customers, people or specific events that are not present in the data.
+- Do not copy any text directly from the source data. Always paraphrase and generalise.
+- Treat all persons as anonymised employees or customers; do not use real names.
+- Respect confidentiality and do not include any personally identifying information.
+
+What you know about the data (schema level):
+- Many observations from different customer sites (e.g. hotels, gyms, schools, offices, residential buildings).
+- Categories can include: slips and falls, sharp objects, electrical risks, fire safety, broken equipment, poor lighting, threatening situations, positive safety behaviour, etc.
+- Observations often include both the situation and suggested corrective actions or safety reminders.
+- The “KP” field is a cost center / customer identifier, such as KP 88, KP 820, etc.
+
+Your task:
+1. Assume you have access to all observations that match the time window and site/KP focus.
+2. From those, write a coherent safety report tailored to the requested purpose.
+3. Focus especially on the KP-related focus text the user gave: "${kpiFocus}".
+   - This might name one KP (e.g. "KP 88") or describe a theme ("KP 88 slips and trips", "KP 820 near misses").
+   - Treat it as the central lens through which you select and group insights.
+
+Suggested report structure:
+- Short introduction: 2–3 sentences explaining what the report covers (sites/KPs, time window, purpose).
+- Key themes and findings:
+  - 2–4 main bullet points summarising the most important safety themes, repeating patterns or trends.
+  - If relevant, highlight which KP(s) or customer sites are most visible in each theme.
+- Concrete examples:
+  - 2–4 brief anonymised examples that illustrate different types of observations (e.g. sharp object, near miss, equipment failure, positive safety behaviour).
+  - Do not quote the original texts; describe them generally.
+- Corrective and preventive actions:
+  - 3–7 practical, actionable recommendations that supervisors and teams can implement.
+  - Link them to the typical categories (e.g. slips and falls, electrical risks, threatening situations, etc.).
+- Section for follow-up:
+  - Short list of suggested follow-up items (e.g. training topics, checks, process improvements) that would be useful based on the observations.
+
+Formatting preferences:
+- ${
+          formattingPrefs.length > 0
+            ? formattingPrefs.join("; ")
+            : "use normal paragraphs, but keep the structure clear and readable"
+        }.
+- Keep the whole report reasonably concise (roughly 0.5–1 A4 page in normal font size).
+- Use neutral, professional language.
+
+Now write only the full report text, without any additional explanation or meta-commentary.
+        `.trim();
+      }
+
+      // Replace this with your real backend endpoint
+      async function callBackend(prompt, fileName) {
+        // Example structure – adjust URL and body to match your existing function
+        const res = await fetch("/.netlify/functions/generate-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, filename: fileName }),
+        });
+        if (!res.ok) {
+          throw new Error("Backend error: " + res.status);
+        }
+        const data = await res.json();
+        return data.text || "";
+      }
+
+      generateBtn.addEventListener("click", async () => {
+        hideError();
+
+        const fileInput = document.getElementById("file_input");
+        const file = fileInput.files[0];
+
+        if (!file) {
+          showError("Please upload an observations file first.");
+          return;
+        }
+
+        setGenerating(true);
+        try {
+          const prompt = buildPrompt(file.name);
+
+          const selectedLanguage =
+            document.getElementById("language").value;
+          const timeRange = document.getElementById("time_range").value;
+          const siteFocus =
+            document.getElementById("site_focus").value.trim();
+
+          metaLanguage.textContent = selectedLanguage;
+          metaTimeRange.textContent = timeRange;
+          metaSiteFocus.textContent =
+            siteFocus.length > 0 ? siteFocus : "All sites / KPs";
+
+          const reportText = await callBackend(prompt, file.name);
+
+          outputEl.textContent = reportText;
+        } catch (e) {
+          console.error(e);
+          showError(
+            "Failed to generate report. Please check your connection and try again."
+          );
+        } finally {
+          setGenerating(false);
+        }
+      });
+    </script>
+  </body>
+</html>
