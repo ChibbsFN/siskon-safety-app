@@ -784,12 +784,20 @@
           enablePdfButtons(true);
           reportPanel.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
-          console.error(err);
-          lastReportText = "";
-          reportText.textContent =
-            "There was an error calling the AI function. Check the console and Netlify logs.";
-          enablePdfButtons(false);
-        }
+  console.error("AI function error:", err);
+
+  // Try to show as much detail as possible on the page
+  let message = "There was an error calling the AI function.";
+
+  if (err && err.message) {
+    message += " " + err.message;
+  }
+
+  lastReportText = "";
+  reportText.textContent = message;
+  enablePdfButtons(false);
+}
+
       });
 
       async function makePdf() {
@@ -852,3 +860,4 @@
   </script>
 </body>
 </html>
+
