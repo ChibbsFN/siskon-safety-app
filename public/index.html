@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Occupational Safety Analysis – Report Generator</title>
+  <title>Occupational Safety Observation – Report Generator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -104,7 +104,8 @@
     }
 
     .field input,
-    .field textarea {
+    .field textarea,
+    .field select {
       width: 100%;
       padding: 0.6rem 0.75rem;
       border-radius: 0.55rem;
@@ -126,7 +127,8 @@
     }
 
     .field input:focus,
-    .field textarea:focus {
+    .field textarea:focus,
+    .field select:focus {
       outline: 2px solid rgba(37, 99, 235, 0.3);
       border-color: var(--accent);
       background: #ffffff;
@@ -291,114 +293,259 @@
 <body>
   <main class="page">
     <header class="page-header">
-      <h1>Occupational Safety Analysis</h1>
+      <h1>Occupational Safety Observation</h1>
       <p>
-        Fill in the details below, optionally upload a safety log file, generate
-        your report, then export it as a polished PDF.
+        Fill in the same fields as your Hailer observation form, optionally
+        upload a Hailer export (CSV), generate the report, then export as PDF.
       </p>
     </header>
 
     <!-- INPUT FORM -->
     <section class="panel">
-      <h2>Report details</h2>
+      <h2>Observation fields (aligned with Hailer)</h2>
       <p class="panel-subtitle">
-        These fields are used to automatically build the report. Required
-        fields are marked with <span class="required">*</span>.
+        Required fields are marked with <span class="required">*</span>.
       </p>
 
       <form id="reportForm" novalidate>
+        <!-- Title + category -->
         <div class="grid">
           <div class="field">
-            <label for="organizationName">
-              Organization / site<span class="required">*</span>
+            <label for="title">
+              Title<span class="required">*</span>
             </label>
             <input
-              id="organizationName"
+              id="title"
               type="text"
               required
-              placeholder="e.g. ACME Manufacturing – Plant 3"
+              placeholder="Short title for the observation"
             />
           </div>
 
           <div class="field">
-            <label for="reportPeriod">
-              Reporting period<span class="required">*</span>
+            <label for="category">
+              Category of the observation<span class="required">*</span>
+            </label>
+            <select id="category" required>
+              <option value="" disabled selected>Choose category</option>
+              <option>Asiakkaan omaisuuden rikkoutuminen</option>
+              <option>Huoltoasiat</option>
+              <option>Kaatuminen</option>
+              <option>Kulkureitti tukittu</option>
+              <option>Liukastuminen</option>
+              <option>Liukkaus</option>
+              <option>Muu</option>
+              <option>Paloturvallisuusriski / tulipalon uhka</option>
+              <option>Positiivinen turvallisuushavainto</option>
+              <option>Putoavat esineet / allejäämisen vaara</option>
+              <option>Raskaat / painavat kuormien siirrot</option>
+              <option>Rikkinäinen imurinjohto</option>
+              <option>Rikkinäiset työvälineet</option>
+              <option>Rullakko</option>
+              <option>Sähköiskun vaara</option>
+              <option>Tapaturmariski</option>
+              <option>Työergonomia / väärät työasennot</option>
+              <option>Uhkaava tilanne</option>
+              <option>Valaistuksen puute</option>
+              <option>Viiltävät / pistävät esineet</option>
+            </select>
+            <div class="field-note">
+              Matches Hailer’s “Category of the observation”.
+            </div>
+          </div>
+        </div>
+
+        <!-- Site + cost centre -->
+        <div class="grid">
+          <div class="field">
+            <label for="customerSite">
+              Customer site<span class="required">*</span>
             </label>
             <input
-              id="reportPeriod"
+              id="customerSite"
               type="text"
               required
-              placeholder="e.g. January–March 2025"
+              placeholder="e.g. Fitness24Seven Oy / Jyväskylä ..."
             />
           </div>
 
           <div class="field">
-            <label for="preparedBy">
-              Prepared by<span class="required">*</span>
+            <label for="costCenter">
+              Cost center of the site
             </label>
             <input
-              id="preparedBy"
+              id="costCenter"
               type="text"
-              required
-              placeholder="Your name / role"
+              placeholder="e.g. KP 88"
             />
           </div>
         </div>
 
-        <!-- NEW: FILE UPLOAD FIELD -->
-        <div class="field">
-          <label for="dataFile">
-            Safety log file (optional, for auto‑analysis)
-          </label>
-          <input
-            id="dataFile"
-            type="file"
-            accept=".csv,.txt"
-          />
-          <div class="field-note">
-            Recommended: CSV with columns like
-            <code>risk, category, location, status, description</code>.
-            We’ll analyze this and include key statistics in the report.
+        <!-- People -->
+        <div class="grid">
+          <div class="field">
+            <label for="owner">Owner</label>
+            <input
+              id="owner"
+              type="text"
+              placeholder="Owner of the observation"
+            />
           </div>
-          <div id="fileStatus" class="file-status">
-            No file selected.
+
+          <div class="field">
+            <label for="personInCharge">Person in charge</label>
+            <input
+              id="personInCharge"
+              type="text"
+              placeholder="Person in charge of the observation"
+            />
+          </div>
+
+          <div class="field">
+            <label for="employee">Employee</label>
+            <input
+              id="employee"
+              type="text"
+              placeholder="Name / ID of the employee"
+            />
+          </div>
+
+          <div class="field">
+            <label for="informant">
+              Name of the informant<span class="required">*</span>
+            </label>
+            <input
+              id="informant"
+              type="text"
+              required
+              placeholder="Person who made the observation"
+            />
           </div>
         </div>
 
         <div class="field">
-          <label for="summary">
-            Summary<span class="required">*</span>
+          <label for="othersInvolved">
+            Others who may have been involved
           </label>
           <textarea
-            id="summary"
+            id="othersInvolved"
+            rows="2"
+            placeholder="List other people involved or affected…"
+          ></textarea>
+        </div>
+
+        <!-- Location + date -->
+        <div class="grid">
+          <div class="field">
+            <label for="location">
+              Location (as accurate as possible place, address, site, work number)
+              <span class="required">*</span>
+            </label>
+            <textarea
+              id="location"
+              required
+              rows="2"
+              placeholder="e.g. Fitness24Seven Kauppakulma, cleaning storage room…"
+            ></textarea>
+          </div>
+
+          <div class="field">
+            <label for="observationDate">
+              Date<span class="required">*</span>
+            </label>
+            <input
+              id="observationDate"
+              type="text"
+              required
+              placeholder="e.g. 11.12.2025 11:00"
+            />
+            <div class="field-note">
+              Free text so you can use the same format as Hailer exports.
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="field">
+          <label for="description">
+            Description of the situation (what happened, why, when, who was involved)
+            <span class="required">*</span>
+          </label>
+          <textarea
+            id="description"
             required
             rows="4"
-            placeholder="High-level overview of safety performance, key achievements, and general trends…"
+            placeholder="Describe what happened, why it happened, when, and who was involved…"
+          ></textarea>
+        </div>
+
+        <!-- Opinion / prevention -->
+        <div class="field">
+          <label for="opinion">
+            Share your opinion: How could the situation have been avoided or prevented from happening again?
+            <span class="required">*</span>
+          </label>
+          <textarea
+            id="opinion"
+            required
+            rows="4"
+            placeholder="Corrective actions, training, guidance, changes to procedures…"
+          ></textarea>
+        </div>
+
+        <!-- Measures / comments -->
+        <div class="field">
+          <label for="measures">
+            Measures taken as a result of the occupational safety observation
+          </label>
+          <textarea
+            id="measures"
+            rows="3"
+            placeholder="What actions have already been taken?"
           ></textarea>
         </div>
 
         <div class="field">
-          <label for="criticalIncidents">
-            Critical incidents overview<span class="required">*</span>
+          <label for="comments">
+            Comments from the occupational safety organisation
           </label>
           <textarea
-            id="criticalIncidents"
-            required
-            rows="4"
-            placeholder="Describe critical incidents, near misses, root causes, and patterns observed…"
+            id="comments"
+            rows="3"
+            placeholder="Internal comments, evaluations, follow-up instructions…"
           ></textarea>
         </div>
 
-        <div class="field">
-          <label for="priorities">
-            Next-year safety priorities<span class="required">*</span>
-          </label>
-          <textarea
-            id="priorities"
-            required
-            rows="4"
-            placeholder="List key initiatives, training, process changes, and investment priorities for the next period…"
-          ></textarea>
+        <!-- Reward + file upload -->
+        <div class="grid">
+          <div class="field">
+            <label for="reward">
+              Will the observation be rewarded?
+            </label>
+            <select id="reward">
+              <option value="" selected>Not decided / not set</option>
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="dataFile">
+              Hailer export (CSV, optional)
+            </label>
+            <input
+              id="dataFile"
+              type="file"
+              accept=".csv"
+            />
+            <div class="field-note">
+              Export observations from Hailer as CSV and upload to include
+              simple statistics (count, top categories/sites) in the report.
+            </div>
+            <div id="fileStatus" class="file-status">
+              No file selected.
+            </div>
+          </div>
         </div>
 
         <div class="actions">
@@ -510,7 +657,34 @@
         });
       }
 
-      function analyzeCsv(text) {
+      // Simple CSV parser that respects quoted fields
+      function parseCsvLine(line) {
+        const result = [];
+        let current = "";
+        let insideQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+
+          if (ch === '"') {
+            if (insideQuotes && line[i + 1] === '"') {
+              current += '"';
+              i++;
+            } else {
+              insideQuotes = !insideQuotes;
+            }
+          } else if (ch === "," && !insideQuotes) {
+            result.push(current);
+            current = "";
+          } else {
+            current += ch;
+          }
+        }
+        result.push(current);
+        return result.map((c) => c.trim());
+      }
+
+      function analyzeHailerCsv(text) {
         const lines = text
           .split(/\r?\n/)
           .map((l) => l.trim())
@@ -520,41 +694,30 @@
           return "<p>Uploaded CSV contains a header but no data rows.</p>";
         }
 
-        const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        const header = parseCsvLine(lines[0]);
         const rows = lines.slice(1);
 
-        const riskIndex = header.indexOf("risk");
-        const categoryIndex = header.indexOf("category");
+        const idxCategory = header.indexOf("Category of the observation");
+        const idxSite = header.indexOf("Customer site");
+        const idxCost = header.indexOf("Cost center of the site");
 
-        const riskCounts = { high: 0, medium: 0, low: 0, other: 0 };
         const categoryCounts = {};
+        const siteCounts = {};
 
         rows.forEach((row) => {
-          const cells = row.split(",");
-          // Risk
-          if (riskIndex >= 0) {
-            const risk = (cells[riskIndex] || "").toLowerCase();
-            if (risk.includes("high")) riskCounts.high++;
-            else if (risk.includes("medium")) riskCounts.medium++;
-            else if (risk.includes("low")) riskCounts.low++;
-            else riskCounts.other++;
+          const cells = parseCsvLine(row);
+          if (idxCategory >= 0) {
+            const cat = (cells[idxCategory] || "").trim();
+            if (cat) categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
           }
-          // Category
-          if (categoryIndex >= 0) {
-            const cat = (cells[categoryIndex] || "").trim();
-            if (cat) {
-              categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-            }
+          if (idxSite >= 0) {
+            const site = (cells[idxSite] || "").trim();
+            if (site) siteCounts[site] = (siteCounts[site] || 0) + 1;
           }
         });
 
-        let html = `<p>The uploaded incident log contains <strong>${rows.length}</strong> records.</p>`;
-
-        if (riskIndex >= 0) {
-          html += `<p>Risk distribution (approx.): HIGH: <strong>${riskCounts.high}</strong>, MEDIUM: <strong>${riskCounts.medium}</strong>, LOW: <strong>${riskCounts.low}</strong>${
-            riskCounts.other ? `, OTHER: <strong>${riskCounts.other}</strong>` : ""
-          }.</p>`;
-        }
+        const total = rows.length;
+        let html = `<p>The imported Hailer dataset contains <strong>${total}</strong> observations.</p>`;
 
         const categories = Object.entries(categoryCounts).sort(
           (a, b) => b[1] - a[1]
@@ -562,44 +725,38 @@
         if (categories.length) {
           const top = categories.slice(0, 3);
           const formatted = top
-            .map(([name, count]) => `${escapeHtml(name)} (${count})`)
+            .map(
+              ([name, count]) =>
+                `${escapeHtml(name)} (${count})`
+            )
             .join(", ");
-          html += `<p>Most frequent categories: ${formatted}.</p>`;
+          html += `<p>Most frequent observation categories: ${formatted}.</p>`;
+        }
+
+        const sites = Object.entries(siteCounts).sort(
+          (a, b) => b[1] - a[1]
+        );
+        if (sites.length && idxCost >= 0) {
+          const topSite = sites[0][0];
+          html += `<p>Site with the most observations: ${escapeHtml(
+            topSite
+          )}.</p>`;
         }
 
         return html;
       }
 
-      function analyzePlainText(text) {
-        const lines = text
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter(Boolean);
-        const length = text.length;
-
-        return `
-          <p>The uploaded notes file contains <strong>${lines.length}</strong> lines (${length} characters).</p>
-          <p>Use these raw notes as supporting evidence for the findings and priorities outlined in this report.</p>
-        `;
-      }
-
       async function getFileInsights(file) {
         if (!file) return "";
 
-        updateFileStatus("Reading and analyzing file…", "ok");
+        updateFileStatus("Reading and analyzing CSV…", "ok");
         const text = await readFileAsText(file);
         if (!text.trim()) {
           updateFileStatus("The selected file appears to be empty.", "error");
           return "";
         }
 
-        const lower = file.name.toLowerCase();
-        let insightsHtml;
-        if (lower.endsWith(".csv")) {
-          insightsHtml = analyzeCsv(text);
-        } else {
-          insightsHtml = analyzePlainText(text);
-        }
+        let insightsHtml = analyzeHailerCsv(text);
 
         const sizeKb = (file.size / 1024).toFixed(1);
         updateFileStatus(
@@ -613,32 +770,30 @@
       generateBtn.addEventListener("click", async function (e) {
         e.preventDefault();
 
-        // Validate required fields
         if (!form.reportValidity()) {
           form.reportValidity();
           return;
         }
 
-        const org = document
-          .getElementById("organizationName")
-          .value.trim();
-        const period = document.getElementById("reportPeriod").value.trim();
-        const preparedBy = document
-          .getElementById("preparedBy")
-          .value.trim();
-        const summary = document.getElementById("summary").value.trim();
-        const incidents = document
-          .getElementById("criticalIncidents")
-          .value.trim();
-        const priorities = document
-          .getElementById("priorities")
-          .value.trim();
-
-        const today = new Date().toLocaleDateString();
+        const title = document.getElementById("title").value.trim();
+        const category = document.getElementById("category").value.trim();
+        const customerSite = document.getElementById("customerSite").value.trim();
+        const costCenter = document.getElementById("costCenter").value.trim();
+        const owner = document.getElementById("owner").value.trim();
+        const personInCharge = document.getElementById("personInCharge").value.trim();
+        const employee = document.getElementById("employee").value.trim();
+        const informant = document.getElementById("informant").value.trim();
+        const othersInvolved = document.getElementById("othersInvolved").value.trim();
+        const location = document.getElementById("location").value.trim();
+        const observationDate = document.getElementById("observationDate").value.trim();
+        const description = document.getElementById("description").value.trim();
+        const opinion = document.getElementById("opinion").value.trim();
+        const measures = document.getElementById("measures").value.trim();
+        const comments = document.getElementById("comments").value.trim();
+        const reward = document.getElementById("reward").value.trim();
 
         enablePdfButtons(false);
 
-        // Analyze file if provided
         const file = fileInput.files[0];
         let fileInsightsHtml = "";
         try {
@@ -648,44 +803,108 @@
         } catch (err) {
           console.error(err);
           updateFileStatus(
-            "There was a problem reading the file. Report will be generated without file-based insights.",
+            "There was a problem reading the file. Report will be generated without file-based statistics.",
             "error"
           );
         }
 
+        let peopleHtml = "";
+        if (owner) {
+          peopleHtml += `<strong>Owner:</strong> ${escapeHtml(owner)}<br />`;
+        }
+        if (personInCharge) {
+          peopleHtml += `<strong>Person in charge:</strong> ${escapeHtml(
+            personInCharge
+          )}<br />`;
+        }
+        if (employee) {
+          peopleHtml += `<strong>Employee:</strong> ${escapeHtml(employee)}<br />`;
+        }
+        if (informant) {
+          peopleHtml += `<strong>Informant:</strong> ${escapeHtml(
+            informant
+          )}<br />`;
+        }
+        if (othersInvolved) {
+          peopleHtml += `<strong>Others involved:</strong> ${formatTextBlock(
+            othersInvolved
+          )}<br />`;
+        }
+        if (!peopleHtml) {
+          peopleHtml = "No named persons recorded.";
+        }
+
+        const today = new Date().toLocaleDateString();
+
+        const locationHtml = location
+          ? `<strong>Location:</strong> ${formatTextBlock(location)}<br />`
+          : "";
+
+        const costCenterHtml = costCenter
+          ? ` · <strong>Cost center:</strong> ${escapeHtml(costCenter)}`
+          : "";
+
+        const rewardHtml = reward
+          ? `<br /><br /><strong>Reward decision:</strong> ${escapeHtml(
+              reward
+            )}.`
+          : "";
+
+        const commentsHtml = comments
+          ? `<br /><br /><strong>Comments from the occupational safety organisation:</strong><br />${formatTextBlock(
+              comments
+            )}`
+          : "";
+
         const insightsSection = fileInsightsHtml
           ? `
-          <h2>Data-driven insights from uploaded file</h2>
+          <h2>Statistics from imported Hailer data</h2>
           ${fileInsightsHtml}
         `
           : "";
 
         reportPreview.innerHTML = `
-          <h1>Occupational Safety Analysis</h1>
+          <h1>Occupational Safety Observation</h1>
+
           <p class="meta-line">
-            <strong>Organization:</strong> ${escapeHtml(org)}<br />
-            <strong>Reporting period:</strong> ${escapeHtml(period)}<br />
-            <strong>Prepared by:</strong> ${escapeHtml(
-              preparedBy
-            )} · <strong>Date:</strong> ${escapeHtml(today)}
+            <strong>Title:</strong> ${escapeHtml(title)}<br />
+            <strong>Category:</strong> ${escapeHtml(category)}
           </p>
+
+          <p class="meta-line">
+            <strong>Customer site:</strong> ${escapeHtml(customerSite)}${costCenterHtml}<br />
+            <strong>Date:</strong> ${escapeHtml(observationDate)}<br />
+            ${locationHtml}
+            <strong>Report generated:</strong> ${escapeHtml(today)}
+          </p>
+
           <hr />
 
-          <h2>Summary</h2>
-          <p>${formatTextBlock(summary)}</p>
+          <h2>People involved</h2>
+          <p>${peopleHtml}</p>
 
-          <h2>Critical incidents overview</h2>
-          <p>${formatTextBlock(incidents)}</p>
+          <h2>Description of the situation</h2>
+          <p>${formatTextBlock(description)}</p>
 
-          <h2>Next-year safety priorities</h2>
-          <p>${formatTextBlock(priorities)}</p>
+          <h2>Prevention and improvements</h2>
+          <p>${formatTextBlock(opinion)}</p>
+
+          <h2>Measures taken & follow-up</h2>
+          <p>
+            ${
+              measures
+                ? formatTextBlock(measures)
+                : "No measures have been recorded yet."
+            }
+            ${commentsHtml}
+            ${rewardHtml}
+          </p>
 
           ${insightsSection}
         `;
 
         reportContainer.classList.remove("hidden");
         enablePdfButtons(true);
-
         reportContainer.scrollIntoView({ behavior: "smooth" });
       });
 
@@ -700,10 +919,9 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-        // Title
         doc.setFont("helvetica", "bold");
         doc.setFontSize(18);
-        doc.text("Occupational Safety Analysis", 15, 20);
+        doc.text("Occupational Safety Observation", 15, 20);
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(11);
@@ -729,11 +947,11 @@
             y += lineHeight;
           });
 
-          y += 2; // extra spacing between paragraphs
+          y += 2;
         });
 
         const filename =
-          "occupational-safety-report-" +
+          "occupational-safety-observation-" +
           new Date().toISOString().slice(0, 10) +
           ".pdf";
         doc.save(filename);
