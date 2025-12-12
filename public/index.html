@@ -232,10 +232,12 @@
       padding-left: 0.75rem;
     }
 
+    #stats strong {
+      font-weight: 600;
+    }
+
     #reportText {
       white-space: pre-wrap;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
       font-size: 0.9rem;
       line-height: 1.6;
       color: #111827;
@@ -274,8 +276,8 @@
     <header class="page-header">
       <h1>Occupational Safety – KPI Report Generator</h1>
       <p>
-        Upload your Hailer Excel exports, choose a KP and date range, and let
-        the AI backend write the safety report for you.
+        Upload your Hailer Excel exports, choose one or more KPs and a date
+        range, and generate a structured safety report.
       </p>
     </header>
 
@@ -309,29 +311,33 @@
         <div class="grid">
           <div class="field">
             <label for="kpNumber">
-              Cost center (KP number)<span class="required">*</span>
+              Cost centers (KPs)<span class="required">*</span>
             </label>
             <input
               id="kpNumber"
               type="text"
-              placeholder="e.g. KP 82"
+              placeholder="e.g. KP 810, 815, 82, 820"
               required
             />
+            <div class="field-note">
+              You can enter one or multiple KPs, separated by commas or spaces.
+              Example: <code>KP 810, 815, 82, 820, 825, 86</code>
+            </div>
           </div>
 
           <div class="field">
-            <label for="siteName">Site name (optional)</label>
+            <label for="siteName">Site group name (optional)</label>
             <input
               id="siteName"
               type="text"
-              placeholder="e.g. Hotelli Helka & Scandic HUB"
+              placeholder="e.g. KP 810, 815, 82, 820, 825, 86 – Year 2025"
             />
           </div>
         </div>
 
         <div class="grid">
           <div class="field">
-            <label for="inspectorName">Inspector name (optional)</label>
+            <label for="inspectorName">Prepared by (optional)</label>
             <input
               id="inspectorName"
               type="text"
@@ -350,7 +356,7 @@
               </div>
             </div>
             <div class="field-note">
-              If empty, all dates for that KP are used.
+              If empty, all dates for the selected KPs are used.
             </div>
           </div>
         </div>
@@ -361,7 +367,7 @@
             id="generateBtn"
             class="btn btn-primary"
           >
-            Generate safety report
+            Generate report
           </button>
 
           <button
@@ -379,7 +385,7 @@
     <!-- REPORT PANEL -->
     <section id="reportPanel" class="panel hidden" aria-live="polite">
       <div class="report-header">
-        <span class="badge">AI report</span>
+        <span class="badge">Report</span>
         <button
           type="button"
           id="topPdfBtn"
@@ -402,7 +408,7 @@
 
   <script>
     (function () {
-      const AI_FUNCTION_PATH = "/.netlify/functions/analyze";
+      const FUNCTION_PATH = "/.netlify/functions/analyze";
 
       const excelInput = document.getElementById("excelFiles");
       const fileStatus = document.getElementById("fileStatus");
@@ -422,8 +428,7 @@
 
       let allObservations = [];
       let lastReportText = "";
-      let lastSiteInfo = null;
-      let lastStats = null;
+      let lastMeta = "";
 
       function updateFileStatus(message, state) {
         fileStatus.textContent = message;
@@ -484,9 +489,7 @@
           const match = headers.find((h) =>
             patterns.some((re) => re.test(h))
           );
-          if (match) {
-            map[key] = match;
-          }
+          if (match) map[key] = match;
         }
         return map;
       }
@@ -518,6 +521,13 @@
           .toLowerCase()
           .replace(/\s+/g, "")
           .replace(/^kp/, "");
+      }
+
+      function parseKpList(input) {
+        return input
+          .split(/[,\s]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
 
       function classifyRisk(category, description) {
@@ -588,7 +598,7 @@
             for (const row of rows) {
               const rawDate = dateKey ? row[dateKey] : null;
               const date = parseHailerDate(rawDate);
-              if (!date) continue; // skip blank header/total rows
+              if (!date) continue;
 
               const obs = {
                 status,
@@ -646,19 +656,27 @@
 
         const kpRaw = kpInput.value.trim();
         if (!kpRaw) {
-          alert("Please enter a KP number (e.g. KP 82).");
+          alert("Please enter at least one KP (e.g. KP 810, 815, 82).");
           kpInput.focus();
           return;
         }
 
-        const normKp = normalizeKp(kpRaw);
+        const kpTokens = parseKpList(kpRaw);
+        if (!kpTokens.length) {
+          alert("Please enter at least one valid KP.");
+          return;
+        }
+        const kpNormList = kpTokens.map(normalizeKp);
+        const kpLabel = kpTokens.join(", ");
+
         const filteredByKp = allObservations.filter((obs) => {
-          return normalizeKp(obs.costCenter) === normKp;
+          const obsNorm = normalizeKp(obs.costCenter);
+          return kpNormList.includes(obsNorm);
         });
 
         if (!filteredByKp.length) {
           alert(
-            `No observations found for KP "${kpRaw}" in the uploaded files.`
+            `No observations found for KPs "${kpLabel}" in the uploaded files.`
           );
           return;
         }
@@ -681,11 +699,10 @@
         }
 
         if (!filtered.length) {
-          alert("No observations match that KP + date range.");
+          alert("No observations match that KP set + date range.");
           return;
         }
 
-        // If user left range empty, compute from data
         if (!fromDate || !toDate) {
           let min = null;
           let max = null;
@@ -700,17 +717,14 @@
         }
 
         const siteName =
-          siteNameInput.value.trim() ||
-          `KP ${kpRaw}`;
+          siteNameInput.value.trim() || `KP ${kpLabel}`;
         const inspectorName =
           inspectorInput.value.trim() || "Not specified";
 
-        const formatDate = (d) =>
-          d ? d.toISOString().slice(0, 10) : "Unknown";
-
+        const fmt = (d) => (d ? d.toISOString().slice(0, 10) : "Unknown");
         const inspectionDate =
           fromDate && toDate
-            ? `${formatDate(fromDate)} – ${formatDate(toDate)}`
+            ? `${fmt(fromDate)} – ${fmt(toDate)}`
             : "Full available period";
 
         const siteInfo = {
@@ -731,77 +745,67 @@
           };
         });
 
-        // Some simple statistics for the top of the page (separate from AI stats)
         const riskCount = { HIGH: 0, MEDIUM: 0, LOW: 0 };
         data.forEach((obs) => {
           const r = (obs.risk || "MEDIUM").toUpperCase();
           riskCount[r] = (riskCount[r] || 0) + 1;
         });
-        lastStats = { total: data.length, riskCount };
 
-        lastSiteInfo = siteInfo;
+        const total = data.length;
+        const metaText = `${siteName} · KPs ${kpLabel} · ${inspectionDate} · ${total} observations`;
+        lastMeta = metaText;
+        reportMeta.textContent = metaText;
+
+        statsDiv.innerHTML =
+          `<strong>Risk distribution:</strong> HIGH ${riskCount.HIGH || 0}, ` +
+          `MEDIUM ${riskCount.MEDIUM || 0}, LOW ${riskCount.LOW || 0}.`;
+
         lastReportText = "";
-        reportText.textContent = "Generating report from AI…";
+        reportText.textContent = "Generating report…";
         reportPanel.classList.remove("hidden");
         enablePdfButtons(false);
 
         try {
-          const response = await fetch(AI_FUNCTION_PATH, {
+          const response = await fetch(FUNCTION_PATH, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ data, siteInfo }),
           });
 
+          const text = await response.text();
+
           if (!response.ok) {
-            const text = await response.text();
             throw new Error(
               `Server error (${response.status}). Details: ${text}`
             );
           }
 
-          const json = await response.json();
-          const analysis = json.analysis || "(No analysis text returned)";
+          let json;
+          try {
+            json = JSON.parse(text);
+          } catch (e) {
+            throw new Error(`Invalid JSON from report service: ${text}`);
+          }
+
+          const analysis = json.analysis || "(No report text returned.)";
           lastReportText = analysis;
           reportText.textContent = analysis;
 
-          const s = json.statistics || {};
-          const total = s.totalObservations || data.length;
-          const riskDist = s.riskDistribution || riskCount;
-          const topCats = s.topCategories || [];
-
-          reportMeta.textContent = `${siteName} · KP ${kpRaw} · ${inspectionDate} · ${total} observations`;
-
-          let statsHtml = "";
-          statsHtml += `<strong>Risk distribution:</strong> HIGH ${riskDist.HIGH || 0}, MEDIUM ${riskDist.MEDIUM || 0}, LOW ${riskDist.LOW || 0}.<br/>`;
-          if (topCats.length) {
-            const txt = topCats
-              .map(([name, count]) => `${name} (${count})`)
-              .join(", ");
-            statsHtml += `<strong>Top categories:</strong> ${txt}.`;
-          }
-          statsDiv.innerHTML = statsHtml;
-
+          // Optional: use json.statistics if returned
           enablePdfButtons(true);
           reportPanel.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
-  console.error("AI function error:", err);
-
-  // Try to show as much detail as possible on the page
-  let message = "There was an error calling the AI function.";
-
-  if (err && err.message) {
-    message += " " + err.message;
-  }
-
-  lastReportText = "";
-  reportText.textContent = message;
-  enablePdfButtons(false);
-}
-
+          console.error("Report generation error:", err);
+          lastReportText = "";
+          reportText.textContent =
+            "There was an error generating the report. " +
+            (err && err.message ? err.message : "");
+          enablePdfButtons(false);
+        }
       });
 
       async function makePdf() {
-        if (!lastReportText || !lastSiteInfo) {
+        if (!lastReportText) {
           alert("Generate a report first.");
           return;
         }
@@ -821,8 +825,7 @@
         doc.setFont("helvetica", "normal");
         doc.setFontSize(11);
 
-        const meta = reportMeta.textContent || "";
-        const metaLines = doc.splitTextToSize(meta, 180);
+        const metaLines = doc.splitTextToSize(lastMeta || "", 180);
         let y = 26;
         metaLines.forEach((line) => {
           doc.text(line, 15, y);
@@ -844,7 +847,7 @@
         });
 
         const today = new Date().toISOString().slice(0, 10);
-        const filename = `occupational-safety-report-${today}.pdf`;
+        const filename = `occupational-safety-analysis-${today}.pdf`;
         doc.save(filename);
       }
 
@@ -860,4 +863,3 @@
   </script>
 </body>
 </html>
-
