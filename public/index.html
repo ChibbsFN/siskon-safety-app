@@ -2,240 +2,558 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Occupational Safety Analysis</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <title>Occupational Safety Analysis – Report Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background:#f4f4f4; }
+    :root {
+      --bg: #0f172a;
+      --card: #ffffff;
+      --border-subtle: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --danger: #dc2626;
+    }
+
+    * ,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #1f2937, #020617 55%);
+      color: var(--text-main);
+    }
+
     .page {
-      max-width: 900px; margin: 0 auto; background:white;
-      padding: 32px 40px; border-radius: 10px; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+      min-height: 100vh;
+      padding: 2rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
     }
-    h1,h2,h3,h4 { margin: 0 0 8px 0; color:#222; }
-    h1 { font-size: 26px; text-align:center; text-transform:uppercase; letter-spacing:1px; }
-    h2 { font-size: 20px; margin-top:24px; border-bottom:1px solid #ddd; padding-bottom:4px; }
-    h3 { font-size: 16px; margin-top:18px; }
-    .meta { text-align:center; margin-bottom:20px; color:#555; }
-    .summary-grid {
-      display:grid; grid-template-columns: repeat(4, minmax(0,1fr));
-      gap:12px; margin:16px 0;
+
+    .page-header {
+      max-width: 900px;
+      text-align: center;
+      color: #e5e7eb;
     }
-    .card {
-      border:1px solid #ddd; border-radius:6px; padding:10px 12px; font-size:13px;
+
+    .page-header h1 {
+      font-size: clamp(1.9rem, 3vw, 2.4rem);
+      margin-bottom: 0.5rem;
     }
-    .card-title { font-weight:bold; font-size:12px; color:#555; text-transform:uppercase; }
-    .card-value { font-size:16px; margin-top:4px; }
-    table {
-      width:100%; border-collapse:collapse; font-size:11px; margin-top:8px;
+
+    .page-header p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #cbd5f5;
     }
-    th, td {
-      border:1px solid #ddd; padding:4px 6px; vertical-align:top;
+
+    .panel {
+      background: var(--card);
+      border-radius: 1rem;
+      padding: 1.75rem 1.75rem 1.5rem;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.55);
     }
-    th {
-      background:#fafafa; text-align:left; font-weight:bold;
+
+    .panel h2 {
+      margin-top: 0;
+      margin-bottom: 0.8rem;
+      font-size: 1.1rem;
     }
-    ul { margin:6px 0 10px 18px; padding:0; font-size:12px; }
-    .kp-header {
-      margin-top:24px; padding:10px 12px; background:#f6f7ff;
-      border-left:4px solid #667eea;
+
+    .panel-subtitle {
+      margin-top: 0;
+      margin-bottom: 1.3rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
     }
-    .highlight { font-weight:bold; color:#c62828; }
-    .tagline { font-size:12px; color:#777; margin-top:4px; }
-    .download-btn {
-      margin-top:16px; padding:8px 18px; border:none; border-radius:4px;
-      background:#667eea; color:white; cursor:pointer; font-weight:600;
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 0.75rem;
     }
-    .controls { margin-bottom:18px; display:flex; gap:8px; flex-wrap:wrap; }
-    .controls input, .controls textarea {
-      padding:6px 8px; font-size:12px; border-radius:4px; border:1px solid #ccc;
+
+    .field {
+      margin-bottom: 0.9rem;
     }
-    .controls textarea { min-width:260px; min-height:40px; }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <h1>Occupational Safety Analysis</h1>
-    <div class="meta" id="reportMeta">
-      <!-- e.g. “KPs: 810, 815, 82, 820, 825, 86 – Year 2025” injected here -->
-    </div>
 
-    <div class="controls">
-      <input id="kpFocus" type="text" placeholder="KP focus (e.g. 82, 820, sharp objects)" />
-      <input id="periodStart" type="date" />
-      <input id="periodEnd" type="date" />
-      <textarea id="emphasis" placeholder="What should this report emphasize?"></textarea>
-      <button id="generateBtn">Generate</button>
-      <button id="pdfBtn">Make PDF</button>
-      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
-    </div>
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: #4b5563;
+    }
 
-    <div id="summarySection">
-      <h2>Summary</h2>
-      <div class="summary-grid" id="summaryCards"></div>
-      <p id="summaryNarrative"></p>
-    </div>
+    .required {
+      color: var(--danger);
+      margin-left: 0.15rem;
+    }
 
-    <div id="kpSections"></div>
+    .field input,
+    .field textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.55rem;
+      border: 1px solid #d1d5db;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      background: #f9fafb;
+      resize: vertical;
+      min-height: 0;
+    }
 
-    <div id="criticalSection">
-      <h2>Critical incidents overview</h2>
-      <p id="criticalNarrative"></p>
-    </div>
+    .field textarea {
+      min-height: 90px;
+    }
 
-    <div id="recommendSection">
-      <h2>Next-year safety priorities</h2>
-      <p id="recommendIntro"></p>
-      <ul id="recommendList"></ul>
-    </div>
-  </div>
+    .field input::placeholder,
+    .field textarea::placeholder {
+      color: #9ca3af;
+    }
 
-  <script>
-    let observations = [];
+    .field input:focus,
+    .field textarea:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.3);
+      border-color: var(--accent);
+      background: #ffffff;
+    }
 
-    document.getElementById('fileInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const wb = XLSX.read(ev.target.result, { type: 'binary' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(ws);
-        observations = data.map(row => ({
-          date: row.Date || row.date,
-          kp: row.KP || row.kp,
-          risk: row.Risk || row.risk,
-          category: row.Category || row.category,
-          location: row.Location || row.location,
-          description: row.Description || row.description,
-        }));
-        alert(`Loaded ${observations.length} rows from Excel.`);
-      };
-      reader.readAsBinaryString(file);
-    });
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.1rem;
+    }
 
-    document.getElementById('generateBtn').addEventListener('click', generateReport);
-    document.getElementById('pdfBtn').addEventListener('click', makePDF);
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 1.5rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
 
-    async function generateReport() {
-      if (!observations.length) {
-        alert('Upload Excel first.');
-        return;
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(37, 99, 235, 0.45);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--text-main);
+      border-color: #d1d5db;
+    }
+
+    .btn-outline:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .report {
+      margin-top: 0.25rem;
+    }
+
+    .report-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+
+    #reportPreview h1 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.4rem;
+    }
+
+    #reportPreview h2 {
+      margin-top: 1.2rem;
+      margin-bottom: 0.3rem;
+      font-size: 1.05rem;
+    }
+
+    #reportPreview p {
+      margin: 0 0 0.35rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #374151;
+    }
+
+    #reportPreview hr {
+      border: 0;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1rem 0 1.1rem;
+    }
+
+    .meta-line {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding-top: 1.5rem;
       }
 
-      const kpFocus = document.getElementById('kpFocus').value.trim() || null;
-      const start = document.getElementById('periodStart').value || null;
-      const end = document.getElementById('periodEnd').value || null;
-      const emphasis = document.getElementById('emphasis').value.trim() || null;
+      .panel {
+        padding: 1.25rem 1rem 1.1rem;
+        border-radius: 0.9rem;
+      }
 
-      const body = JSON.stringify({
-        data: observations,
-        userOptions: { kpFocus, start, end, emphasis }
-      });
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
 
-      const res = await fetch('/.netlify/functions/analyze-index', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body
-      });
-
-      const report = await res.json();
-      // report is expected to already contain the structured numbers & text.
-
-      fillOverview(report.overview);
-      fillKPs(report.kps);
-      fillCritical(report.critical);
-      fillRecommendations(report.recommendations);
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
+  </style>
+</head>
 
-    function fillOverview(o) {
-      document.getElementById('reportMeta').textContent =
-        `${o.kpLabel} – ${o.yearLabel}`;
-      const cards = document.getElementById('summaryCards');
-      cards.innerHTML = '';
-      const items = [
-        { title: 'Total observations', value: o.totalObservations },
-        { title: 'High-risk cases', value: o.highRiskLabel },
-        { title: 'Positive observations', value: o.positiveLabel },
-        { title: 'Period', value: o.periodLabel }
-      ];
-      items.forEach(i => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `<div class="card-title">${i.title}</div>
-                         <div class="card-value">${i.value}</div>`;
-        cards.appendChild(div);
-      });
-      document.getElementById('summaryNarrative').textContent = o.narrative;
-    }
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1>Occupational Safety Analysis</h1>
+      <p>
+        Fill in the details below, generate your safety report, then export it
+        as a polished PDF.
+      </p>
+    </header>
 
-    function fillKPs(kps) {
-      const container = document.getElementById('kpSections');
-      container.innerHTML = '';
-      kps.forEach(kp => {
-        const section = document.createElement('div');
-        section.innerHTML = `
-          <div class="kp-header">
-            <h2>${kp.title}</h2>
-            <div class="tagline">
-              Total: ${kp.total} | High‑risk: <span class="highlight">${kp.highRiskLabel}</span> |
-              Period: ${kp.periodLabel}
-            </div>
+    <!-- INPUT FORM -->
+    <section class="panel">
+      <h2>Report details</h2>
+      <p class="panel-subtitle">
+        These fields are used to automatically build the report. Required
+        fields are marked with <span class="required">*</span>.
+      </p>
+
+      <form id="reportForm" novalidate>
+        <div class="grid">
+          <div class="field">
+            <label for="organizationName">
+              Organization / site<span class="required">*</span>
+            </label>
+            <input
+              id="organizationName"
+              type="text"
+              required
+              placeholder="e.g. ACME Manufacturing – Plant 3"
+            />
           </div>
-          <h3>All cases with dates</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Location</th>
-                <th>Issue</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${kp.rows.map(r => `
-                <tr>
-                  <td>${r.date}</td>
-                  <td>${r.category}</td>
-                  <td>${r.location}</td>
-                  <td>${r.issue}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <h3>Main themes</h3>
-          <ul>
-            ${kp.keyIssues.map(i => `<li>${i}</li>`).join('')}
-          </ul>
+
+          <div class="field">
+            <label for="reportPeriod">
+              Reporting period<span class="required">*</span>
+            </label>
+            <input
+              id="reportPeriod"
+              type="text"
+              required
+              placeholder="e.g. January–March 2025"
+            />
+          </div>
+
+          <div class="field">
+            <label for="preparedBy">
+              Prepared by<span class="required">*</span>
+            </label>
+            <input
+              id="preparedBy"
+              type="text"
+              required
+              placeholder="Your name / role"
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="summary">
+            Summary<span class="required">*</span>
+          </label>
+          <textarea
+            id="summary"
+            required
+            rows="4"
+            placeholder="High-level overview of safety performance, key achievements, and general trends…"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label for="criticalIncidents">
+            Critical incidents overview<span class="required">*</span>
+          </label>
+          <textarea
+            id="criticalIncidents"
+            required
+            rows="4"
+            placeholder="Describe critical incidents, near misses, root causes, and patterns observed…"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label for="priorities">
+            Next-year safety priorities<span class="required">*</span>
+          </label>
+          <textarea
+            id="priorities"
+            required
+            rows="4"
+            placeholder="List key initiatives, training, process changes, and investment priorities for the next period…"
+          ></textarea>
+        </div>
+
+        <div class="actions">
+          <button
+            type="button"
+            id="generateBtn"
+            class="btn btn-primary"
+          >
+            Generate report
+          </button>
+
+          <button
+            type="button"
+            id="pdfBtn"
+            class="btn btn-outline"
+            disabled
+          >
+            Make PDF
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- REPORT PREVIEW -->
+    <section
+      id="reportContainer"
+      class="panel report hidden"
+      aria-live="polite"
+    >
+      <div class="report-toolbar">
+        <span class="badge">Preview</span>
+        <button
+          type="button"
+          id="topPdfBtn"
+          class="btn btn-outline"
+          disabled
+        >
+          Make PDF
+        </button>
+      </div>
+
+      <div id="reportPreview"></div>
+    </section>
+  </main>
+
+  <!-- jsPDF via CDN for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    (function () {
+      const form = document.getElementById("reportForm");
+      const generateBtn = document.getElementById("generateBtn");
+      const pdfBtn = document.getElementById("pdfBtn");
+      const topPdfBtn = document.getElementById("topPdfBtn");
+      const reportContainer = document.getElementById("reportContainer");
+      const reportPreview = document.getElementById("reportPreview");
+
+      function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, function (m) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[m];
+        });
+      }
+
+      function formatTextBlock(text) {
+        return escapeHtml(text).replace(/\n/g, "<br>");
+      }
+
+      function enablePdfButtons(enabled) {
+        [pdfBtn, topPdfBtn].forEach((btn) => {
+          if (!btn) return;
+          btn.disabled = !enabled;
+        });
+      }
+
+      generateBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        // Let the browser show which required fields are missing
+        if (!form.reportValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        const org = document
+          .getElementById("organizationName")
+          .value.trim();
+        const period = document.getElementById("reportPeriod").value.trim();
+        const preparedBy = document
+          .getElementById("preparedBy")
+          .value.trim();
+        const summary = document.getElementById("summary").value.trim();
+        const incidents = document
+          .getElementById("criticalIncidents")
+          .value.trim();
+        const priorities = document
+          .getElementById("priorities")
+          .value.trim();
+
+        const today = new Date().toLocaleDateString();
+
+        reportPreview.innerHTML = `
+          <h1>Occupational Safety Analysis</h1>
+          <p class="meta-line">
+            <strong>Organization:</strong> ${escapeHtml(org)}<br />
+            <strong>Reporting period:</strong> ${escapeHtml(period)}<br />
+            <strong>Prepared by:</strong> ${escapeHtml(
+              preparedBy
+            )} · <strong>Date:</strong> ${escapeHtml(today)}
+          </p>
+          <hr />
+
+          <h2>Summary</h2>
+          <p>${formatTextBlock(summary)}</p>
+
+          <h2>Critical incidents overview</h2>
+          <p>${formatTextBlock(incidents)}</p>
+
+          <h2>Next-year safety priorities</h2>
+          <p>${formatTextBlock(priorities)}</p>
         `;
-        container.appendChild(section);
+
+        reportContainer.classList.remove("hidden");
+        enablePdfButtons(true);
+
+        // Scroll to the preview
+        reportContainer.scrollIntoView({ behavior: "smooth" });
       });
-    }
 
-    function fillCritical(c) {
-      document.getElementById('criticalNarrative').textContent = c.narrative;
-    }
+      async function makePdf() {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          alert(
+            "The PDF library did not load. Please check your network connection."
+          );
+          return;
+        }
 
-    function fillRecommendations(r) {
-      document.getElementById('recommendIntro').textContent = r.intro;
-      const list = document.getElementById('recommendList');
-      list.innerHTML = '';
-      r.items.forEach(item => {
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${item.title}.</strong> ${item.text}`;
-        list.appendChild(li);
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+        // Title
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("Occupational Safety Analysis", 15, 20);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+
+        const lines = reportPreview.innerText
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        const maxWidth = 180;
+        const lineHeight = 6;
+        let y = 32;
+
+        lines.forEach((line) => {
+          const chunks = doc.splitTextToSize(line, maxWidth);
+
+          chunks.forEach((chunk) => {
+            if (y > 280) {
+              doc.addPage();
+              y = 20;
+            }
+            doc.text(chunk, 15, y);
+            y += lineHeight;
+          });
+
+          y += 2; // small spacing between paragraphs
+        });
+
+        const filename =
+          "occupational-safety-report-" +
+          new Date().toISOString().slice(0, 10) +
+          ".pdf";
+        doc.save(filename);
+      }
+
+      [pdfBtn, topPdfBtn].forEach((btn) => {
+        if (!btn) return;
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          makePdf();
+        });
       });
-    }
 
-    function makePDF() {
-      const element = document.querySelector('.page');
-      const fileName = 'Occupational-Safety-Analysis.pdf';
-      html2pdf().set({
-        margin: 10,
-        filename: fileName,
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      }).from(element).save();
-    }
+      // Make sure PDF buttons start disabled
+      enablePdfButtons(false);
+    })();
   </script>
 </body>
 </html>
