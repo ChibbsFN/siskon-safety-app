@@ -38,16 +38,34 @@ exports.handler = async (event) => {
     const safeDate =
       (siteInfo && siteInfo.inspectionDate) || "Not specified";
 
+    // ---------- Helpers ----------
+
+    function normRisk(r) {
+      return String(r || "MEDIUM").toUpperCase();
+    }
+
+    function getDate(obs) {
+      return (
+        obs.date ||
+        obs.observationDate ||
+        obs.created_at ||
+        obs.created ||
+        obs.timestamp ||
+        ""
+      );
+    }
+
+    function formatDateForText(d) {
+      if (!d) return "Date n/a";
+      return String(d);
+    }
+
     // ---------- Compute statistics on ALL observations ----------
 
     const totalObservations = data.length;
     const riskCount = { HIGH: 0, MEDIUM: 0, LOW: 0 };
     const categories = {};
     const locations = new Set();
-
-    function normRisk(r) {
-      return String(r || "MEDIUM").toUpperCase();
-    }
 
     data.forEach((obs) => {
       const risk = normRisk(obs.risk);
@@ -56,7 +74,7 @@ exports.handler = async (event) => {
       const cat = obs.category || "Unknown";
       categories[cat] = (categories[cat] || 0) + 1;
 
-      if (obs.location) locations.add(obs.location);
+      if (obs.location) locations.add(obs.location || "Unknown");
     });
 
     const topCategories = Object.entries(categories)
@@ -70,38 +88,79 @@ exports.handler = async (event) => {
       locationsAffected: Array.from(locations).length,
     };
 
-    // ---------- Build a trimmed list for the prompt --------------
+    // ---------- Identify repeating patterns (category + location) ----------
 
-    const MAX_OBS_FOR_PROMPT = 140;
+    const patternMap = {}; // key: "category|location" -> array of obs
 
-    const highs = data.filter((o) => normRisk(o.risk) === "HIGH");
-    const mediums = data.filter((o) => normRisk(o.risk) === "MEDIUM");
-    const lows = data.filter((o) => normRisk(o.risk) === "LOW");
+    data.forEach((obs) => {
+      const cat = obs.category || "Unknown";
+      const loc = obs.location || "Unknown location";
+      const key = `${cat}|${loc}`;
+      if (!patternMap[key]) patternMap[key] = [];
+      patternMap[key].push(obs);
+    });
 
-    const trimmed = [];
+    const repeatingClusters = Object.values(patternMap)
+      .filter((arr) => arr.length >= 3) // "repetitive" threshold
+      .sort((a, b) => b.length - a.length); // biggest clusters first
 
-    function takeFrom(arr) {
-      for (let i = 0; i < arr.length; i++) {
-        if (trimmed.length >= MAX_OBS_FOR_PROMPT) return;
-        trimmed.push(arr[i]);
+    // ---------- Build example set: critical + repetitive ----------
+
+    const MAX_EXAMPLES = 60;
+    const exampleObs = [];
+
+    // 1) All HIGH risk incidents (up to 30), sorted by date (newest first)
+    const criticalHigh = data
+      .filter((o) => normRisk(o.risk) === "HIGH")
+      .sort((a, b) => {
+        const da = new Date(getDate(a) || "1970-01-01").getTime();
+        const db = new Date(getDate(b) || "1970-01-01").getTime();
+        return db - da;
+      })
+      .slice(0, 30);
+
+    criticalHigh.forEach((obs) => {
+      if (exampleObs.length < MAX_EXAMPLES) {
+        exampleObs.push(obs);
+      }
+    });
+
+    // 2) Repeating pattern examples (clusters with >=3 observations)
+    for (const cluster of repeatingClusters) {
+      if (exampleObs.length >= MAX_EXAMPLES) break;
+      // take up to 3 examples from each cluster
+      for (let i = 0; i < cluster.length && i < 3; i++) {
+        if (exampleObs.length >= MAX_EXAMPLES) break;
+        exampleObs.push(cluster[i]);
       }
     }
 
-    takeFrom(highs);
-    takeFrom(mediums);
-    takeFrom(lows);
+    // 3) Fallback: if still small, add a few more Medium/Low
+    if (exampleObs.length < 10) {
+      const extras = data
+        .filter((o) => normRisk(o.risk) !== "HIGH")
+        .slice(0, 10);
+      extras.forEach((obs) => {
+        if (exampleObs.length < MAX_EXAMPLES) {
+          exampleObs.push(obs);
+        }
+      });
+    }
 
-    // If somehow there are still none, fall back to original data
-    const promptData = trimmed.length ? trimmed : data;
+    function formatExample(obs, index) {
+      const risk = normRisk(obs.risk);
+      const cat = obs.category || "Unknown";
+      const loc = obs.location || "Unknown location";
+      const dateText = formatDateForText(getDate(obs));
+      const status = obs.status || "Unknown";
+      const desc = obs.description || "";
 
-    const observationsText = promptData
-      .map(
-        (obs, i) =>
-          `${i + 1}. [${normRisk(obs.risk)}] ${obs.category || "Unknown"} at ${
-            obs.location || "Unknown location"
-          } (Status: ${obs.status || "Unknown"})\n` +
-          `Description: ${obs.description || ""}`
-      )
+      return `${index}. ${dateText} – [${risk}] ${cat} at ${loc} (Status: ${status})
+   ${desc}`;
+    }
+
+    const examplesText = exampleObs
+      .map((obs, i) => formatExample(obs, i + 1))
       .join("\n\n");
 
     const totalHigh = riskCount.HIGH || 0;
@@ -111,31 +170,28 @@ exports.handler = async (event) => {
       totalObservations > 0
         ? Math.round((totalHigh / totalObservations) * 100)
         : 0;
-
     const highPctText =
-      totalObservations > 0
-        ? `${pctHigh}%`
-        : "0%";
+      totalObservations > 0 ? `${pctHigh}%` : "0%";
 
     const topCategoriesText =
       topCategories.length > 0
         ? topCategories.map(([cat, count]) => `${cat} (${count})`).join(", ")
         : "n/a";
 
-    // ---------- PROMPT MATCHING YOUR SPEC -------------------------
+    // ---------- Prompt: focus on critical + repetitive issues + dates ----------
 
     const summary = `
-Generate a comprehensive Occupational Safety Analysis Report for ${safeSiteName} covering the period ${safeDate}. 
-Base it on the quantitative statistics and safety observations provided below.
-
-The report is for professional use and should be suitable to present directly to management or the customer.
+Generate a comprehensive Occupational Safety Analysis Report for ${safeSiteName} covering the period ${safeDate}.
+The report is an annual summary intended for management and must focus especially on:
+- critical HIGH risk incidents, and
+- repetitive patterns (similar issues happening again and again).
 
 CONTEXT
 - Sites / cost centers: ${safeSiteName}
 - Period: ${safeDate}
 - Prepared by: ${safeInspector}
 
-OVERALL STATISTICS
+OVERALL STATISTICS FOR THE PERIOD
 - Total observations: ${totalObservations}
 - Risk breakdown:
   - HIGH: ${totalHigh} (${highPctText} of all observations)
@@ -144,64 +200,80 @@ OVERALL STATISTICS
 - Top categories (by frequency): ${topCategoriesText}
 - Number of distinct locations affected: ${statistics.locationsAffected}
 
-You are also given example observations in free-text form. 
-Each observation includes a risk level, category, location, status and description of the situation and measures:
+REPRESENTATIVE EXAMPLE OBSERVATIONS
+The following incidents are selected examples. They include:
+- all available HIGH risk cases (up to a cap), and
+- examples from the most repetitive patterns (same category and location appearing many times).
+Each line includes the observation date, risk level, category, location, status and a short description.
 
-${observationsText}
+${examplesText}
+
+Use these examples, together with the overall statistics, to identify which risks are critical and which issues repeat over time. 
+When you describe an issue, mention dates from these examples (e.g. “On 2025-10-16 at [site] ...”) to show when problems occurred.
 
 TASK
-Using this information, generate a comprehensive Occupational Safety Analysis Report that follows this exact structure and intent:
+Based on this information, generate a comprehensive Occupational Safety Analysis Report that includes the following sections:
 
 1. Executive Summary
-   - Provide a concise overview of the overall safety situation at the sites.
-   - Include a clear risk breakdown (HIGH / MEDIUM / LOW) and express percentages where relevant.
-   - Highlight the key themes (for example: firearm or weapon incidents, lighting deficiencies, slips/trips, ergonomics, low ceilings, fire/electrical risks, threatening situations).
-   - Use a medium–high urgency tone while remaining professional.
+   - Concise overview of the overall safety situation at the sites.
+   - Clear risk breakdown (HIGH / MEDIUM / LOW percentages).
+   - Highlight the most important critical and repetitive issues, referencing dates where helpful.
+   - Tone: professional with medium–high urgency.
 
 2. Risk Distribution Analysis
    - Analyse how risk is distributed between HIGH, MEDIUM and LOW.
-   - Comment on what types of incidents dominate each risk level.
-   - Explain whether the risk profile suggests acceptable control, emerging concerns, or clear weaknesses.
+   - Explain which types of incidents dominate HIGH risk.
+   - Comment on whether the risk profile indicates acceptable control, emerging concerns or obvious weaknesses.
 
-3. Top 5 Critical Issues
-   - Rank the five most critical issues by combined risk and potential consequences.
-   - For each issue: give a short title, risk level(s), typical locations or KPs, and a brief explanation of the consequences if not addressed.
-   - Use examples from the observations (for instance: firearm discovery, repeated lighting deficiencies, slips from cleaning, head strikes due to low ceilings, threatening situations).
+3. Top Critical and Recurrent Issues
+   - Present a ranked list (for example top 5–7) of the most important issues, focusing on:
+     - HIGH risk incidents, and
+     - problems that repeat across dates or sites (recurrent hazards).
+   - For each issue, provide:
+     - a short title,
+     - risk level(s),
+     - typical sites or cost centres,
+     - examples with dates (e.g. “On 2025-10-16 and 2025-11-03 similar lighting issues were observed at ...”),
+     - short explanation of consequences if not fixed.
 
-4. Categorized Issues with Frequency and Patterns
-   - Group observations by category (e.g. lighting, slips/trips, threatening behaviour, ergonomics, housekeeping, fire/electrical, structural hazards).
-   - Describe frequencies and patterns, including where problems repeat across different sites.
-   - Mention if some categories appear mainly as MEDIUM risk but could escalate.
+4. Categorized Issues and Patterns
+   - Group observations by category (lighting, slips/trips, threatening behaviour, ergonomics, housekeeping, fire/electrical, structural hazards, etc.).
+   - Describe how often they appear and where they repeat (same sites / locations).
+   - Point out categories that are mostly MEDIUM risk but occur frequently and could escalate.
 
 5. Root Cause Analysis
-   - Identify likely root causes behind the patterns you see, such as:
+   - Identify likely root causes behind the observed critical and repetitive issues, such as:
      - maintenance gaps
-     - insufficient training or orientation
+     - training or orientation deficiencies
      - unclear procedures or responsibilities
      - physical layout / design issues
-     - inadequate inspection or follow-up
-   - Summarise these in 3–7 clear bullet points linked to the observations.
+     - insufficient inspection or follow-up
+   - Summarise these in 3–7 clear bullet points linked to the issues above.
 
-6. Recommendations with Priority Action Items
+6. Recommendations and Priority Actions
    - Provide concrete actions grouped into:
-     - Immediate actions (for the most serious HIGH risks or urgent issues)
-     - Short-term actions (to be addressed in the coming weeks)
+     - Immediate actions (for serious HIGH risks and urgent problems)
+     - Short-term actions (next few weeks)
      - Long-term development actions (structural, process or training changes)
-   - Each recommendation should explain what to do, where, and why, and should clearly reduce identified risks.
+   - For each recommendation:
+     - describe what should be done, where, and why,
+     - link it to specific issues or patterns (mention dates where helpful),
+     - explain how it will reduce risk.
 
 7. Compliance Standards
-   - Briefly reference relevant occupational safety regulations and standards, 
-     such as the Occupational Safety Act 738/2002 and other typical Finnish or EU requirements 
-     (e.g. obligations concerning safe working environment, hazard identification, PPE, training, lighting and safe access).
-   - Indicate where the observations suggest potential gaps in compliance without making strict legal claims.
+   - Briefly reference relevant occupational safety regulations and standards,
+     such as the Occupational Safety Act 738/2002 and typical Finnish/EU requirements
+     (safe working environment, hazard identification, PPE and training obligations, lighting and safe access).
+   - Indicate where the observations suggest possible compliance gaps, without making strict legal claims.
 
 8. Performance Metrics
-   - Describe the current state using practical metrics (for example: total observations, proportion of HIGH risks, main categories by count).
+   - Describe the current state using practical metrics (for example:
+     total observations, proportion of HIGH risks, main categories by count).
    - Suggest target metrics such as:
-     - zero HIGH risk observations
-     - reduction of MEDIUM risks in key categories
-     - completion rates for training or corrective actions
-   - Propose how progress could be tracked over time.
+     - zero HIGH risk observations,
+     - reduction of MEDIUM risks in key recurring categories,
+     - completion rates for training or corrective actions.
+   - Propose how progress could be monitored over time.
 
 9. Implementation Timeline
    - Propose a realistic timeline for the recommended actions:
@@ -209,22 +281,22 @@ Using this information, generate a comprehensive Occupational Safety Analysis Re
      - Short term (1–4 weeks)
      - Medium term (1–3 months)
      - Long term (3+ months)
-   - Assign action types to these phases in a logical way.
+   - Allocate action types to these phases logically, with special attention to critical and repetitive issues.
 
 10. Conclusion
    - Provide a short closing assessment of overall safety level and urgency.
    - Highlight where management should focus attention next.
-   - Reinforce key metrics and the importance of aiming for zero HIGH risks.
+   - Reinforce the importance of eliminating HIGH risks and systematically addressing recurring problems.
 
 STYLE REQUIREMENTS
 - Use clear headings and subheadings following the structure above.
+- Focus especially on critical (HIGH) risks and repetitive patterns, referring to dates when describing key examples.
 - Use neutral, professional business language with a medium–high urgency tone.
-- Quantify impacts wherever possible (for example: number of incidents, percentage of HIGH risks, repetition across sites).
 - Do NOT mention artificial intelligence, models, or that the report was generated.
-- Do NOT invent numbers; rely on the statistics and patterns in the observations.
+- Do NOT invent numbers; rely on the statistics and patterns provided.
 - Aim for a length that would fit comfortably in about 2–4 A4 pages when converted to PDF.
 
-Now, based strictly on the statistics and observations provided, write the full Occupational Safety Analysis Report following this structure.
+Now, based strictly on the statistics and dated example observations above, write the full Occupational Safety Analysis Report following this structure.
     `.trim();
 
     // ---------- Call Perplexity API (sonar) ----------
@@ -242,7 +314,7 @@ Now, based strictly on the statistics and observations provided, write the full 
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        timeout: 60000, // 60s client-side timeout
+        timeout: 60000, // client-side timeout; remote may still have its own limit
       }
     );
 
