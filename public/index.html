@@ -17,7 +17,7 @@
       --danger: #dc2626;
     }
 
-    * ,
+    *,
     *::before,
     *::after {
       box-sizing: border-box;
@@ -130,6 +130,26 @@
       outline: 2px solid rgba(37, 99, 235, 0.3);
       border-color: var(--accent);
       background: #ffffff;
+    }
+
+    .field-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .file-status {
+      font-size: 0.78rem;
+      margin-top: 0.2rem;
+      color: var(--text-muted);
+    }
+
+    .file-status--ok {
+      color: #15803d;
+    }
+
+    .file-status--error {
+      color: #b91c1c;
     }
 
     .actions {
@@ -273,8 +293,8 @@
     <header class="page-header">
       <h1>Occupational Safety Analysis</h1>
       <p>
-        Fill in the details below, generate your safety report, then export it
-        as a polished PDF.
+        Fill in the details below, optionally upload a safety log file, generate
+        your report, then export it as a polished PDF.
       </p>
     </header>
 
@@ -322,6 +342,26 @@
               required
               placeholder="Your name / role"
             />
+          </div>
+        </div>
+
+        <!-- NEW: FILE UPLOAD FIELD -->
+        <div class="field">
+          <label for="dataFile">
+            Safety log file (optional, for auto‑analysis)
+          </label>
+          <input
+            id="dataFile"
+            type="file"
+            accept=".csv,.txt"
+          />
+          <div class="field-note">
+            Recommended: CSV with columns like
+            <code>risk, category, location, status, description</code>.
+            We’ll analyze this and include key statistics in the report.
+          </div>
+          <div id="fileStatus" class="file-status">
+            No file selected.
           </div>
         </div>
 
@@ -416,6 +456,9 @@
       const reportContainer = document.getElementById("reportContainer");
       const reportPreview = document.getElementById("reportPreview");
 
+      const fileInput = document.getElementById("dataFile");
+      const fileStatus = document.getElementById("fileStatus");
+
       function escapeHtml(str) {
         return str.replace(/[&<>"']/g, function (m) {
           return {
@@ -439,10 +482,138 @@
         });
       }
 
-      generateBtn.addEventListener("click", function (e) {
+      function updateFileStatus(message, state) {
+        if (!fileStatus) return;
+        fileStatus.textContent = message;
+        fileStatus.classList.remove("file-status--ok", "file-status--error");
+        if (state === "ok") fileStatus.classList.add("file-status--ok");
+        if (state === "error") fileStatus.classList.add("file-status--error");
+      }
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) {
+          updateFileStatus("No file selected.", null);
+          return;
+        }
+        const sizeKb = (file.size / 1024).toFixed(1);
+        updateFileStatus(`Selected "${file.name}" (${sizeKb} KB).`, "ok");
+      });
+
+      function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result || "");
+          reader.onerror = () =>
+            reject(reader.error || new Error("Could not read file."));
+          reader.readAsText(file);
+        });
+      }
+
+      function analyzeCsv(text) {
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        if (lines.length < 2) {
+          return "<p>Uploaded CSV contains a header but no data rows.</p>";
+        }
+
+        const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        const rows = lines.slice(1);
+
+        const riskIndex = header.indexOf("risk");
+        const categoryIndex = header.indexOf("category");
+
+        const riskCounts = { high: 0, medium: 0, low: 0, other: 0 };
+        const categoryCounts = {};
+
+        rows.forEach((row) => {
+          const cells = row.split(",");
+          // Risk
+          if (riskIndex >= 0) {
+            const risk = (cells[riskIndex] || "").toLowerCase();
+            if (risk.includes("high")) riskCounts.high++;
+            else if (risk.includes("medium")) riskCounts.medium++;
+            else if (risk.includes("low")) riskCounts.low++;
+            else riskCounts.other++;
+          }
+          // Category
+          if (categoryIndex >= 0) {
+            const cat = (cells[categoryIndex] || "").trim();
+            if (cat) {
+              categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            }
+          }
+        });
+
+        let html = `<p>The uploaded incident log contains <strong>${rows.length}</strong> records.</p>`;
+
+        if (riskIndex >= 0) {
+          html += `<p>Risk distribution (approx.): HIGH: <strong>${riskCounts.high}</strong>, MEDIUM: <strong>${riskCounts.medium}</strong>, LOW: <strong>${riskCounts.low}</strong>${
+            riskCounts.other ? `, OTHER: <strong>${riskCounts.other}</strong>` : ""
+          }.</p>`;
+        }
+
+        const categories = Object.entries(categoryCounts).sort(
+          (a, b) => b[1] - a[1]
+        );
+        if (categories.length) {
+          const top = categories.slice(0, 3);
+          const formatted = top
+            .map(([name, count]) => `${escapeHtml(name)} (${count})`)
+            .join(", ");
+          html += `<p>Most frequent categories: ${formatted}.</p>`;
+        }
+
+        return html;
+      }
+
+      function analyzePlainText(text) {
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+        const length = text.length;
+
+        return `
+          <p>The uploaded notes file contains <strong>${lines.length}</strong> lines (${length} characters).</p>
+          <p>Use these raw notes as supporting evidence for the findings and priorities outlined in this report.</p>
+        `;
+      }
+
+      async function getFileInsights(file) {
+        if (!file) return "";
+
+        updateFileStatus("Reading and analyzing file…", "ok");
+        const text = await readFileAsText(file);
+        if (!text.trim()) {
+          updateFileStatus("The selected file appears to be empty.", "error");
+          return "";
+        }
+
+        const lower = file.name.toLowerCase();
+        let insightsHtml;
+        if (lower.endsWith(".csv")) {
+          insightsHtml = analyzeCsv(text);
+        } else {
+          insightsHtml = analyzePlainText(text);
+        }
+
+        const sizeKb = (file.size / 1024).toFixed(1);
+        updateFileStatus(
+          `Analyzed "${file.name}" (${sizeKb} KB). Included summary in the report.`,
+          "ok"
+        );
+
+        return insightsHtml;
+      }
+
+      generateBtn.addEventListener("click", async function (e) {
         e.preventDefault();
 
-        // Let the browser show which required fields are missing
+        // Validate required fields
         if (!form.reportValidity()) {
           form.reportValidity();
           return;
@@ -465,6 +636,30 @@
 
         const today = new Date().toLocaleDateString();
 
+        enablePdfButtons(false);
+
+        // Analyze file if provided
+        const file = fileInput.files[0];
+        let fileInsightsHtml = "";
+        try {
+          if (file) {
+            fileInsightsHtml = await getFileInsights(file);
+          }
+        } catch (err) {
+          console.error(err);
+          updateFileStatus(
+            "There was a problem reading the file. Report will be generated without file-based insights.",
+            "error"
+          );
+        }
+
+        const insightsSection = fileInsightsHtml
+          ? `
+          <h2>Data-driven insights from uploaded file</h2>
+          ${fileInsightsHtml}
+        `
+          : "";
+
         reportPreview.innerHTML = `
           <h1>Occupational Safety Analysis</h1>
           <p class="meta-line">
@@ -484,12 +679,13 @@
 
           <h2>Next-year safety priorities</h2>
           <p>${formatTextBlock(priorities)}</p>
+
+          ${insightsSection}
         `;
 
         reportContainer.classList.remove("hidden");
         enablePdfButtons(true);
 
-        // Scroll to the preview
         reportContainer.scrollIntoView({ behavior: "smooth" });
       });
 
@@ -533,7 +729,7 @@
             y += lineHeight;
           });
 
-          y += 2; // small spacing between paragraphs
+          y += 2; // extra spacing between paragraphs
         });
 
         const filename =
@@ -551,7 +747,7 @@
         });
       });
 
-      // Make sure PDF buttons start disabled
+      // Start with PDF buttons disabled
       enablePdfButtons(false);
     })();
   </script>
