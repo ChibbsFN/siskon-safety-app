@@ -1,65 +1,854 @@
-function buildPrompt(kp, filters, summary) {
-  const { fromDate, toDate, includedStatuses } = filters;
-  const rangeLabel =
-    fromDate && toDate
-      ? `${fromDate} – ${toDate}`
-      : summary.dateRange.from && summary.dateRange.to
-      ? `${summary.dateRange.from} – ${summary.dateRange.to}`
-      : "full available period";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Occupational Safety – KPI Report Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  const statusLabel = includedStatuses.length
-    ? includedStatuses.join(", ")
-    : "all statuses";
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #ffffff;
+      --border-subtle: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --danger: #dc2626;
+    }
 
-  return `
-You are an occupational safety specialist.
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
 
-Using ONLY the JSON data below, write a concise report that follows THIS TEXT STRUCTURE
-(plain text only, no markdown):
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #1f2937, #020617 55%);
+      color: var(--text-main);
+    }
 
-OCCUPATIONAL SAFETY ANALYSIS
-KP ${kp} – Reporting period ${rangeLabel}
+    .page {
+      min-height: 100vh;
+      padding: 2rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
 
-SUMMARY
-- Total observations: <number>
-- Period: <start date> – <end date>
-- High‑risk cases: <number and % of total>  (use your best judgement for which cases are high risk based on the description and category)
-- Positive observations: <number and % if identifiable>
-- 2–4 sentences summarising the overall safety situation and key themes.
+    .page-header {
+      max-width: 900px;
+      text-align: center;
+      color: #e5e7eb;
+    }
 
-ALL CASES WITH DATES
-Write a 4‑column text table for the most relevant cases. Use this layout in plain text:
+    .page-header h1 {
+      font-size: clamp(1.9rem, 3vw, 2.4rem);
+      margin-bottom: 0.5rem;
+    }
 
-Date       | Category                 | Location               | Issue
----------- | ------------------------ | ---------------------- | ----------------------------------------
+    .page-header p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #cbd5f5;
+    }
 
-Then one line per observation (up to about 30 rows), for example:
-2025-07-30 | Paloturvallisuusriski    | Omena Hotel Hanko      | Short one‑sentence description of the issue
+    .panel {
+      background: var(--card);
+      border-radius: 1rem;
+      padding: 1.75rem 1.75rem 1.5rem;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.55);
+    }
 
-Use the "sampleObservations" list from the JSON and pick the most representative and serious cases.
+    .panel h2 {
+      margin-top: 0;
+      margin-bottom: 0.8rem;
+      font-size: 1.1rem;
+    }
 
-KEY ISSUES
-Heading: "Key issues:"
-Under it, write a numbered list (1., 2., 3., …) of 3–6 key themes.
-Each point should group similar incidents (e.g. fire/electrical, sharp objects, falls, threatening situations, etc.)
-and reference dates or locations when helpful.
+    .panel-subtitle {
+      margin-top: 0;
+      margin-bottom: 1.3rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
 
-CRITICAL INCIDENTS SUMMARY
-Heading: "Critical incidents summary (most severe cases)"
-Then a short bullet list of the most severe events (threats, fire, electrical, serious injuries, weapons, etc.)
-with dates and 1–2 line descriptions.
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
 
-RECOMMENDATIONS
-Heading: "Recommendations for next period"
-Then 3–6 concrete, actionable recommendations based on the issues above.
+    .field {
+      margin-bottom: 0.9rem;
+    }
 
-RULES
-- All numbers and categories must match or be consistent with the JSON data.
-- Do NOT invent data.
-- Keep headings in ALL CAPS exactly as shown.
-- Keep the total report length similar to a 1–2 page PDF.
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: #4b5563;
+    }
 
-JSON data:
-${JSON.stringify(summary, null, 2)}
-  `.trim();
-}
+    .field input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.55rem;
+      border: 1px solid #d1d5db;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      background: #f9fafb;
+    }
+
+    .field input::placeholder {
+      color: #9ca3af;
+    }
+
+    .field input:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.3);
+      border-color: var(--accent);
+      background: #ffffff;
+    }
+
+    .field-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .file-status {
+      font-size: 0.8rem;
+      margin-top: 0.3rem;
+      color: var(--text-muted);
+    }
+
+    .file-status--ok {
+      color: #15803d;
+    }
+
+    .file-status--error {
+      color: #b91c1c;
+    }
+
+    .required {
+      color: var(--danger);
+      margin-left: 0.15rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.4rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 1.5rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(37, 99, 235, 0.45);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--text-main);
+      border-color: #d1d5db;
+    }
+
+    .btn-outline:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+
+    .meta-line {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    #stats {
+      font-size: 0.85rem;
+      color: #374151;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid #e5e7eb;
+      padding-left: 0.75rem;
+    }
+
+    #reportText {
+      white-space: pre-wrap;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #111827;
+      margin-top: 0.5rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding-top: 1.5rem;
+      }
+
+      .panel {
+        padding: 1.25rem 1rem 1.1rem;
+        border-radius: 0.9rem;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1>Occupational Safety – KPI Report Generator</h1>
+      <p>
+        Upload your Hailer Excel exports, choose a KP and date range, and let
+        the AI backend write the safety report for you.
+      </p>
+    </header>
+
+    <!-- CONTROL PANEL -->
+    <section class="panel">
+      <h2>1. Upload data & set filters</h2>
+      <p class="panel-subtitle">
+        This uses your Netlify function <code>/.netlify/functions/analyze</code>
+        and the Hailer Excel exports (<em>Completed / In progress / New</em>).
+      </p>
+
+      <form id="controlForm" novalidate>
+        <div class="field">
+          <label for="excelFiles">
+            Hailer Excel exports<span class="required">*</span>
+          </label>
+          <input
+            id="excelFiles"
+            type="file"
+            accept=".xlsx,.xls"
+            multiple
+          />
+          <div class="field-note">
+            You can drop in all three exports (Completed, In progress, New) at once.
+          </div>
+          <div id="fileStatus" class="file-status">
+            No files selected.
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="kpNumber">
+              Cost center (KP number)<span class="required">*</span>
+            </label>
+            <input
+              id="kpNumber"
+              type="text"
+              placeholder="e.g. KP 82"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="siteName">Site name (optional)</label>
+            <input
+              id="siteName"
+              type="text"
+              placeholder="e.g. Hotelli Helka & Scandic HUB"
+            />
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="inspectorName">Inspector name (optional)</label>
+            <input
+              id="inspectorName"
+              type="text"
+              placeholder="Your name"
+            />
+          </div>
+
+          <div class="field">
+            <label>Date range (optional)</label>
+            <div class="grid" style="gap: 0.5rem;">
+              <div class="field" style="margin-bottom:0;">
+                <input id="dateFrom" type="date" />
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <input id="dateTo" type="date" />
+              </div>
+            </div>
+            <div class="field-note">
+              If empty, all dates for that KP are used.
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button
+            type="button"
+            id="generateBtn"
+            class="btn btn-primary"
+          >
+            Generate safety report
+          </button>
+
+          <button
+            type="button"
+            id="pdfBtn"
+            class="btn btn-outline"
+            disabled
+          >
+            Download PDF
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- REPORT PANEL -->
+    <section id="reportPanel" class="panel hidden" aria-live="polite">
+      <div class="report-header">
+        <span class="badge">AI report</span>
+        <button
+          type="button"
+          id="topPdfBtn"
+          class="btn btn-outline"
+          disabled
+        >
+          Download PDF
+        </button>
+      </div>
+
+      <p id="reportMeta" class="meta-line"></p>
+      <div id="stats"></div>
+      <div id="reportText"></div>
+    </section>
+  </main>
+
+  <!-- Excel + PDF libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    (function () {
+      const AI_FUNCTION_PATH = "/.netlify/functions/analyze";
+
+      const excelInput = document.getElementById("excelFiles");
+      const fileStatus = document.getElementById("fileStatus");
+      const kpInput = document.getElementById("kpNumber");
+      const siteNameInput = document.getElementById("siteName");
+      const inspectorInput = document.getElementById("inspectorName");
+      const dateFromInput = document.getElementById("dateFrom");
+      const dateToInput = document.getElementById("dateTo");
+      const generateBtn = document.getElementById("generateBtn");
+      const pdfBtn = document.getElementById("pdfBtn");
+      const topPdfBtn = document.getElementById("topPdfBtn");
+
+      const reportPanel = document.getElementById("reportPanel");
+      const reportMeta = document.getElementById("reportMeta");
+      const statsDiv = document.getElementById("stats");
+      const reportText = document.getElementById("reportText");
+
+      let allObservations = [];
+      let lastReportText = "";
+      let lastSiteInfo = null;
+      let lastStats = null;
+
+      function updateFileStatus(message, state) {
+        fileStatus.textContent = message;
+        fileStatus.classList.remove("file-status--ok", "file-status--error");
+        if (state === "ok") fileStatus.classList.add("file-status--ok");
+        if (state === "error") fileStatus.classList.add("file-status--error");
+      }
+
+      function enablePdfButtons(enabled) {
+        [pdfBtn, topPdfBtn].forEach((btn) => {
+          btn.disabled = !enabled;
+        });
+      }
+
+      function statusFromFileName(name) {
+        const lower = name.toLowerCase();
+        if (lower.includes("completed")) return "Completed";
+        if (lower.includes("in progress") || lower.includes("in_progress"))
+          return "In progress";
+        if (lower.includes("new")) return "New";
+        return "Unknown";
+      }
+
+      function parseHailerDate(str) {
+        if (!str || typeof str !== "string") return null;
+        const trimmed = str.trim();
+        if (!trimmed) return null;
+
+        const [datePart, timePart = "00:00"] = trimmed.split(/\s+/);
+        const [dayStr, monthStr, yearStr] = datePart.split(".").filter(Boolean);
+        const day = Number(dayStr);
+        const month = Number(monthStr);
+        const year = Number(yearStr);
+        if (!day || !month || !year) return null;
+
+        const [hStr = "0", mStr = "0"] = timePart.split(":");
+        const hour = Number(hStr);
+        const minute = Number(mStr);
+
+        const d = new Date(year, month - 1, day, hour || 0, minute || 0);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      const COLUMN_MATCHERS = {
+        costCenter: [/^Cost center of the site$/i],
+        date: [/^Date$/i],
+        category: [/^Category of the observation$/i],
+        customerSite: [/^Customer site$/i],
+        title: [/^Title$/i],
+        description: [/^Description of the situation/i],
+        opinion: [/^Share your opinion/i],
+        measures: [/^Measures taken as a result of the occupational safety observation$/i],
+      };
+
+      function buildColumnMap(headers) {
+        const map = {};
+        for (const [key, patterns] of Object.entries(COLUMN_MATCHERS)) {
+          const match = headers.find((h) =>
+            patterns.some((re) => re.test(h))
+          );
+          if (match) {
+            map[key] = match;
+          }
+        }
+        return map;
+      }
+
+      function loadExcelFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: "array" });
+              const sheetName = workbook.SheetNames[0];
+              const sheet = workbook.Sheets[sheetName];
+              const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+              resolve(rows);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          reader.onerror = () =>
+            reject(reader.error || new Error("Could not read file"));
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      function normalizeKp(str) {
+        return (str || "")
+          .toString()
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .replace(/^kp/, "");
+      }
+
+      function classifyRisk(category, description) {
+        const text = `${category || ""} ${description || ""}`.toLowerCase();
+
+        const highWords = [
+          "paloturvallisuus",
+          "tulipalon",
+          "sähköiskun vaara",
+          "uhkaava tilanne",
+          "uhkaava",
+          "putoavat esineet",
+          "tapaturmariski",
+          "viiltävät",
+          "pistävät",
+          "hair curler",
+          "gun",
+          "weapon",
+          "burning",
+          "fire",
+        ];
+
+        if (highWords.some((w) => text.includes(w))) return "HIGH";
+        if (text.includes("positiivinen")) return "LOW";
+
+        return "MEDIUM";
+      }
+
+      function buildDescription(obs) {
+        const parts = [];
+        if (obs.title) parts.push(`Title: ${obs.title}`);
+        if (obs.description) parts.push(`Situation: ${obs.description}`);
+        if (obs.opinion) parts.push(`Prevention: ${obs.opinion}`);
+        if (obs.measures) parts.push(`Measures: ${obs.measures}`);
+        return parts.join(" ");
+      }
+
+      excelInput.addEventListener("change", async () => {
+        allObservations = [];
+        enablePdfButtons(false);
+        reportPanel.classList.add("hidden");
+        reportText.textContent = "";
+        reportMeta.textContent = "";
+        statsDiv.textContent = "";
+
+        const files = Array.from(excelInput.files || []);
+        if (!files.length) {
+          updateFileStatus("No files selected.", null);
+          return;
+        }
+
+        updateFileStatus("Reading Excel files…", "ok");
+
+        for (const file of files) {
+          const status = statusFromFileName(file.name);
+          try {
+            const rows = await loadExcelFile(file);
+            if (!rows.length) continue;
+
+            const headers = Object.keys(rows[0]);
+            const columnMap = buildColumnMap(headers);
+
+            const costKey = columnMap.costCenter;
+            const dateKey = columnMap.date;
+            const catKey = columnMap.category;
+            const siteKey = columnMap.customerSite;
+
+            for (const row of rows) {
+              const rawDate = dateKey ? row[dateKey] : null;
+              const date = parseHailerDate(rawDate);
+              if (!date) continue; // skip blank header/total rows
+
+              const obs = {
+                status,
+                fileName: file.name,
+                costCenter: costKey ? String(row[costKey] || "").trim() : "",
+                category: catKey ? String(row[catKey] || "").trim() : "",
+                customerSite: siteKey ? String(row[siteKey] || "").trim() : "",
+                title: columnMap.title
+                  ? String(row[columnMap.title] || "").trim()
+                  : "",
+                description: columnMap.description
+                  ? String(row[columnMap.description] || "").trim()
+                  : "",
+                opinion: columnMap.opinion
+                  ? String(row[columnMap.opinion] || "").trim()
+                  : "",
+                measures: columnMap.measures
+                  ? String(row[columnMap.measures] || "").trim()
+                  : "",
+                rawDate: rawDate || "",
+                date,
+              };
+
+              if (!obs.title && !obs.description) continue;
+              allObservations.push(obs);
+            }
+          } catch (err) {
+            console.error(err);
+            updateFileStatus(
+              `Error reading "${file.name}". Some data may be missing.`,
+              "error"
+            );
+          }
+        }
+
+        if (!allObservations.length) {
+          updateFileStatus(
+            "No valid observations found in the uploaded files.",
+            "error"
+          );
+        } else {
+          updateFileStatus(
+            `Loaded ${allObservations.length} observations from ${files.length} file(s).`,
+            "ok"
+          );
+        }
+      });
+
+      generateBtn.addEventListener("click", async () => {
+        const files = Array.from(excelInput.files || []);
+        if (!files.length || !allObservations.length) {
+          alert("Please upload at least one Hailer Excel export first.");
+          return;
+        }
+
+        const kpRaw = kpInput.value.trim();
+        if (!kpRaw) {
+          alert("Please enter a KP number (e.g. KP 82).");
+          kpInput.focus();
+          return;
+        }
+
+        const normKp = normalizeKp(kpRaw);
+        const filteredByKp = allObservations.filter((obs) => {
+          return normalizeKp(obs.costCenter) === normKp;
+        });
+
+        if (!filteredByKp.length) {
+          alert(
+            `No observations found for KP "${kpRaw}" in the uploaded files.`
+          );
+          return;
+        }
+
+        const fromVal = dateFromInput.value;
+        const toVal = dateToInput.value;
+        let fromDate = fromVal ? new Date(fromVal + "T00:00:00") : null;
+        let toDate = toVal ? new Date(toVal + "T23:59:59") : null;
+
+        let filtered = filteredByKp;
+
+        if (fromDate || toDate) {
+          filtered = filtered.filter((obs) => {
+            if (!obs.date) return false;
+            const t = obs.date.getTime();
+            if (fromDate && t < fromDate.getTime()) return false;
+            if (toDate && t > toDate.getTime()) return false;
+            return true;
+          });
+        }
+
+        if (!filtered.length) {
+          alert("No observations match that KP + date range.");
+          return;
+        }
+
+        // If user left range empty, compute from data
+        if (!fromDate || !toDate) {
+          let min = null;
+          let max = null;
+          filtered.forEach((obs) => {
+            if (!obs.date) return;
+            const t = obs.date;
+            if (!min || t < min) min = t;
+            if (!max || t > max) max = t;
+          });
+          if (!fromDate && min) fromDate = min;
+          if (!toDate && max) toDate = max;
+        }
+
+        const siteName =
+          siteNameInput.value.trim() ||
+          `KP ${kpRaw}`;
+        const inspectorName =
+          inspectorInput.value.trim() || "Not specified";
+
+        const formatDate = (d) =>
+          d ? d.toISOString().slice(0, 10) : "Unknown";
+
+        const inspectionDate =
+          fromDate && toDate
+            ? `${formatDate(fromDate)} – ${formatDate(toDate)}`
+            : "Full available period";
+
+        const siteInfo = {
+          siteName,
+          inspectorName,
+          inspectionDate,
+        };
+
+        const data = filtered.map((obs) => {
+          const desc = buildDescription(obs);
+          const risk = classifyRisk(obs.category, desc);
+          return {
+            risk,
+            category: obs.category || "Unknown",
+            location: obs.customerSite || "",
+            status: obs.status || "Unknown",
+            description: desc || "(no description)",
+          };
+        });
+
+        // Some simple statistics for the top of the page (separate from AI stats)
+        const riskCount = { HIGH: 0, MEDIUM: 0, LOW: 0 };
+        data.forEach((obs) => {
+          const r = (obs.risk || "MEDIUM").toUpperCase();
+          riskCount[r] = (riskCount[r] || 0) + 1;
+        });
+        lastStats = { total: data.length, riskCount };
+
+        lastSiteInfo = siteInfo;
+        lastReportText = "";
+        reportText.textContent = "Generating report from AI…";
+        reportPanel.classList.remove("hidden");
+        enablePdfButtons(false);
+
+        try {
+          const response = await fetch(AI_FUNCTION_PATH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data, siteInfo }),
+          });
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(
+              `Server error (${response.status}). Details: ${text}`
+            );
+          }
+
+          const json = await response.json();
+          const analysis = json.analysis || "(No analysis text returned)";
+          lastReportText = analysis;
+          reportText.textContent = analysis;
+
+          const s = json.statistics || {};
+          const total = s.totalObservations || data.length;
+          const riskDist = s.riskDistribution || riskCount;
+          const topCats = s.topCategories || [];
+
+          reportMeta.textContent = `${siteName} · KP ${kpRaw} · ${inspectionDate} · ${total} observations`;
+
+          let statsHtml = "";
+          statsHtml += `<strong>Risk distribution:</strong> HIGH ${riskDist.HIGH || 0}, MEDIUM ${riskDist.MEDIUM || 0}, LOW ${riskDist.LOW || 0}.<br/>`;
+          if (topCats.length) {
+            const txt = topCats
+              .map(([name, count]) => `${name} (${count})`)
+              .join(", ");
+            statsHtml += `<strong>Top categories:</strong> ${txt}.`;
+          }
+          statsDiv.innerHTML = statsHtml;
+
+          enablePdfButtons(true);
+          reportPanel.scrollIntoView({ behavior: "smooth" });
+        } catch (err) {
+          console.error(err);
+          lastReportText = "";
+          reportText.textContent =
+            "There was an error calling the AI function. Check the console and Netlify logs.";
+          enablePdfButtons(false);
+        }
+      });
+
+      async function makePdf() {
+        if (!lastReportText || !lastSiteInfo) {
+          alert("Generate a report first.");
+          return;
+        }
+
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          alert("PDF library did not load.");
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("OCCUPATIONAL SAFETY ANALYSIS", 15, 18);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+
+        const meta = reportMeta.textContent || "";
+        const metaLines = doc.splitTextToSize(meta, 180);
+        let y = 26;
+        metaLines.forEach((line) => {
+          doc.text(line, 15, y);
+          y += 5;
+        });
+
+        y += 4;
+
+        const bodyLines = doc.splitTextToSize(lastReportText, 180);
+        const lineHeight = 5;
+
+        bodyLines.forEach((line) => {
+          if (y > 280) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(line, 15, y);
+          y += lineHeight;
+        });
+
+        const today = new Date().toISOString().slice(0, 10);
+        const filename = `occupational-safety-report-${today}.pdf`;
+        doc.save(filename);
+      }
+
+      [pdfBtn, topPdfBtn].forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          makePdf();
+        });
+      });
+
+      enablePdfButtons(false);
+    })();
+  </script>
+</body>
+</html>
