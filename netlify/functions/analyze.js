@@ -31,8 +31,8 @@ const axios = require("axios");
 
 exports.handler = async (event) => {
   try {
+    // CORS preflight support (safe even if not strictly needed)
     if (event.httpMethod === "OPTIONS") {
-      // CORS preflight (harmless even if not strictly needed)
       return {
         statusCode: 200,
         headers: {
@@ -80,34 +80,15 @@ exports.handler = async (event) => {
     }
 
     const effectiveSiteInfo = {
-      siteName: (siteInfo && siteInfo.siteName) || "Unknown site",
+      siteName: siteInfo && siteInfo.siteName ? siteInfo.siteName : "Unknown site",
       inspectorName:
-        (siteInfo && siteInfo.inspectorName) || "Not specified",
+        siteInfo && siteInfo.inspectorName
+          ? siteInfo.inspectorName
+          : "Not specified",
       inspectionDate:
-        (siteInfo && siteInfo.inspectionDate) || "Not specified",
+        siteInfo && siteInfo.inspectionDate
+          ? siteInfo.inspectionDate
+          : "Not specified",
     };
 
-    // --- Basic statistics for the UI ---------------------------------------
-
-    const totalObservations = data.length;
-    const riskDistribution = { HIGH: 0, MEDIUM: 0, LOW: 0 };
-    const categoryCounts = {};
-
-    data.forEach((obs) => {
-      const r = String(obs.risk || "MEDIUM").toUpperCase();
-      if (riskDistribution[r] === undefined) {
-        riskDistribution[r] = 0;
-      }
-      riskDistribution[r] += 1;
-
-      const cat = (obs.category || "Unknown").trim();
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-    });
-
-    const topCategories = Object.entries(categoryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    const statistics = {
-      totalObservations,
-      riskDistribut
+    // ---------------- Basic statistics for the UI ---------
