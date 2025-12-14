@@ -1,17 +1,16 @@
 {
   "name": "siskon-safety-app",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
-  "description": "Siskon Safety Report Generator (premium rebuild)",
+  "description": "Siskon Safety Report Generator",
   "scripts": {
     "dev": "netlify dev",
-    "lint": "node -e \"console.log('No linter configured (optional).')\"",
     "build": "node -e \"console.log('No build step (static in /public).')\""
   },
   "dependencies": {
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
-    "netlify-cli": "^17.41.0"
+    "netlify-cli": "^23.12.3"
   }
 }
