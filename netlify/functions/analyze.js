@@ -1,6 +1,23 @@
 // netlify/functions/analyze.js
 
 const axios = require("axios");
+const crypto = require("crypto");
+
+// This endpoint spends Perplexity credits, so callers must send the
+// ANALYZE_ACCESS_CODE env var value in the X-Access-Code header.
+const MAX_BODY_BYTES = 2 * 1024 * 1024;
+const MAX_OBSERVATIONS = 5000;
+const MAX_FIELD = 2000;
+
+function safeEqual(a, b) {
+  const ha = crypto.createHash("sha256").update(String(a || "")).digest();
+  const hb = crypto.createHash("sha256").update(String(b || "")).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+function clip(v, max = MAX_FIELD) {
+  return String(v == null ? "" : v).slice(0, max);
+}
 
 exports.handler = async (event) => {
   // Only allow POST requests
@@ -11,8 +28,34 @@ exports.handler = async (event) => {
     };
   }
 
+  const expectedCode = process.env.ANALYZE_ACCESS_CODE;
+  if (!expectedCode) {
+    return {
+      statusCode: 503,
+      body: JSON.stringify({ error: "ANALYZE_ACCESS_CODE is not configured." }),
+    };
+  }
+  const headers = event.headers || {};
+  if (!safeEqual(headers["x-access-code"] || headers["X-Access-Code"], expectedCode)) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+  if (Buffer.byteLength(event.body || "", "utf8") > MAX_BODY_BYTES) {
+    return { statusCode: 413, body: JSON.stringify({ error: "Request too large" }) };
+  }
+
   try {
-    const { data, siteInfo } = JSON.parse(event.body || "{}");
+    const parsed = JSON.parse(event.body || "{}");
+    const siteInfo = parsed.siteInfo;
+    const data = Array.isArray(parsed.data)
+      ? parsed.data
+          .slice(0, MAX_OBSERVATIONS)
+          .filter((o) => o && typeof o === "object")
+          .map((o) => {
+            const out = {};
+            for (const k of Object.keys(o).slice(0, 30)) out[k] = clip(o[k]);
+            return out;
+          })
+      : parsed.data;
 
     const apiKey = process.env.PERPLEXITY_API_KEY;
     if (!apiKey) {
@@ -32,11 +75,11 @@ exports.handler = async (event) => {
       };
     }
 
-    const safeSiteName = (siteInfo && siteInfo.siteName) || "Not specified";
+    const safeSiteName = clip((siteInfo && siteInfo.siteName) || "Not specified", 300);
     const safeInspector =
-      (siteInfo && siteInfo.inspectorName) || "Not specified";
+      clip((siteInfo && siteInfo.inspectorName) || "Not specified", 200);
     const safeDate =
-      (siteInfo && siteInfo.inspectionDate) || "Not specified";
+      clip((siteInfo && siteInfo.inspectionDate) || "Not specified", 100);
 
     // ---------- Helpers ----------
 
@@ -355,8 +398,6 @@ Now, based strictly on the statistics and dated example observations above, writ
       statusCode: 500,
       body: JSON.stringify({
         error: errorMsg,
-        details:
-          error.response && error.response.data ? error.response.data : null,
       }),
     };
   }
